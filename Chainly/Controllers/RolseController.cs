@@ -4,9 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Linq;
 using System.Threading.Tasks;
+using Chainly.Domain.Constants;
 using Microsoft.EntityFrameworkCore;
-using Chainly.Data.Constants;
-using Chainly.Data.Models;
+
 
 namespace Chainly.Controllers
 {
