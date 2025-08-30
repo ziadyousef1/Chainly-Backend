@@ -5,7 +5,11 @@ VisualStudioVersion = 17.14.36414.22 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chainly", "Chainly\Chainly.csproj", "{C1BD91AE-56F2-4615-B09A-5B703149FA57}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chainly.Data", "Chainly.Data\Chainly.Data.csproj", "{75F9CB76-C13C-487F-BD0B-B8C14D3A7EEF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chainly.Domain", "Chainly.Domain\Chainly.Domain.csproj", "{75F9CB76-C13C-487F-BD0B-B8C14D3A7EEF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chainly.Application", "Chainly.Application\Chainly.Application.csproj", "{A1B2C3D4-E5F6-7890-1234-567890ABCDEF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chainly.Infrastructure", "Chainly.Infrastructure\Chainly.Infrastructure.csproj", "{B2C3D4E5-F6A7-8901-2345-67890ABCDEF1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +25,14 @@ Global
 		{75F9CB76-C13C-487F-BD0B-B8C14D3A7EEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{75F9CB76-C13C-487F-BD0B-B8C14D3A7EEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{75F9CB76-C13C-487F-BD0B-B8C14D3A7EEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-1234-567890ABCDEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-1234-567890ABCDEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-1234-567890ABCDEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-1234-567890ABCDEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2C3D4E5-F6A7-8901-2345-67890ABCDEF1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2C3D4E5-F6A7-8901-2345-67890ABCDEF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2C3D4E5-F6A7-8901-2345-67890ABCDEF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2C3D4E5-F6A7-8901-2345-67890ABCDEF1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

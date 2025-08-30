@@ -9,11 +9,7 @@
   <component name="ChangeListManager">
     <list default="true" id="1f6f7ecf-157a-4d27-aeb5-f549e6b38ae8" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Chainly/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Chainly/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Chainly.Data/Constants/Permissions.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly.Data/Constants/Permissions.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Chainly.Data/Helpers/DBIntializer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly.Data/Helpers/DBIntializer.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Chainly/Controllers/AuthenticationController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly/Controllers/AuthenticationController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Chainly/Controllers/RolseController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly/Controllers/RolseController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Chainly/Filters/PermissionAuthorizationHandler.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly/Filters/PermissionAuthorizationHandler.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Chainly.sln" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly.sln" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -21,24 +17,47 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="DpaMonitoringSettings">
-    <option name="firstShow" value="false" />
+    <option name="autoShow" value="false" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="JSON File" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "ziadyousef1"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/SCM-DevIgnite/Chainly.git",
+    "accountId": "91f8f5f1-6485-4fd4-abe9-ae462e898192"
+  }
+}]]></component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/f97a7aacf07f4dcfb4b5abaf07ce590918930/_065bf/ClaimTypes.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock:///Dummy.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$USER_HOME$/AppData/Roaming/Microsoft/UserSecrets/7f69db6f-fb7e-443d-96b3-6baac791fa89/secrets.json" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$USER_HOME$/AppData/Roaming/Microsoft/UserSecrets/99c0c631-136b-43ec-9418-fde1babd3b61/secrets.json" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/Chainly.Data/Constants/CustomClaimTypes.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/Maryam/RiderProjects/Chainly/Chainly.Data/Helpers/DBIntializer.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/Maryam/RiderProjects/Chainly/Chainly/Controllers/AuthenticationController.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly/Filters/PermissionAuthorizationHandler.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly/Filters/PermissionPolicyProvider.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly/Filters/PermissionRequirement.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Chainly/Program.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly/appsettings.json" root0="FORCE_HIGHLIGHTING" />
   </component>
+  <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
+  <component name="KubernetesApiProvider"><![CDATA[{
+  "isMigrated": true
+}]]></component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
   &quot;associatedIndex&quot;: 0
@@ -48,22 +67,22 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;.NET Project.Chainly.executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    ".NET Project.Chainly.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration name="Chainly" type="DotNetProject" factoryName=".NET Project">
       <option name="EXE_PATH" value="" />
@@ -71,13 +90,8 @@
       <option name="WORKING_DIRECTORY" value="" />
       <option name="PASS_PARENT_ENVS" value="1" />
       <option name="USE_EXTERNAL_CONSOLE" value="0" />
-      <option name="ENV_FILE_PATHS" value="" />
-      <option name="REDIRECT_INPUT_PATH" value="" />
-      <option name="PTY_MODE" value="Auto" />
-      <option name="MIXED_MODE_DEBUG" value="0" />
       <option name="USE_MONO" value="0" />
       <option name="RUNTIME_ARGUMENTS" value="" />
-      <option name="AUTO_ATTACH_CHILDREN" value="0" />
       <option name="PROJECT_PATH" value="$PROJECT_DIR$/Chainly/Chainly.csproj" />
       <option name="PROJECT_EXE_PATH_TRACKING" value="1" />
       <option name="PROJECT_ARGUMENTS_TRACKING" value="1" />
@@ -89,6 +103,7 @@
       </method>
     </configuration>
   </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="1f6f7ecf-157a-4d27-aeb5-f549e6b38ae8" name="Changes" comment="" />
@@ -98,6 +113,7 @@
       <updated>1756498300052</updated>
       <workItem from="1756498301271" duration="841000" />
       <workItem from="1756499172225" duration="11540000" />
+      <workItem from="1756519482124" duration="13328000" />
     </task>
     <servers />
   </component>
@@ -112,18 +128,45 @@
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
-        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
-          <properties exception="System.OperationCanceledException" breakIfHandledByOtherCode="false" displayValue="System.OperationCanceledException" />
-          <option name="timeStamp" value="1" />
-        </breakpoint>
-        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
-          <properties exception="System.Threading.Tasks.TaskCanceledException" breakIfHandledByOtherCode="false" displayValue="System.Threading.Tasks.TaskCanceledException" />
-          <option name="timeStamp" value="2" />
-        </breakpoint>
-        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
-          <properties exception="System.Threading.ThreadAbortException" breakIfHandledByOtherCode="false" displayValue="System.Threading.ThreadAbortException" />
-          <option name="timeStamp" value="3" />
-        </breakpoint>
+        <line-breakpoint enabled="true" type="DotNet Breakpoints">
+          <url>file://$PROJECT_DIR$/Chainly/Controllers/SuppliersController.cs</url>
+          <line>21</line>
+          <properties documentPath="D:\SCM\Chainly\Chainly\Controllers\SupplierImportController.cs" containingFunctionPresentation="Method 'ImportSuppliers'">
+            <startOffsets>
+              <option value="683" />
+            </startOffsets>
+            <endOffsets>
+              <option value="684" />
+            </endOffsets>
+          </properties>
+          <option name="timeStamp" value="8" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DotNet Breakpoints">
+          <url>file://$PROJECT_DIR$/Chainly.Application/Services/Implementation/SupplierImportService.cs</url>
+          <line>20</line>
+          <properties documentPath="D:\SCM\Chainly\Chainly.Application\Services\Implementation\SupplierImportService.cs" containingFunctionPresentation="Method 'ReadSuppliersFromExcelAsync'">
+            <startOffsets>
+              <option value="613" />
+            </startOffsets>
+            <endOffsets>
+              <option value="614" />
+            </endOffsets>
+          </properties>
+          <option name="timeStamp" value="9" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DotNet Breakpoints">
+          <url>file://$PROJECT_DIR$/Chainly/Helpers/DBIntializer.cs</url>
+          <line>84</line>
+          <properties documentPath="D:\SCM\Chainly\Chainly\Helpers\DBIntializer.cs" containingFunctionPresentation="Method 'SeedSuppliersFromExcelAsync'">
+            <startOffsets>
+              <option value="3049" />
+            </startOffsets>
+            <endOffsets>
+              <option value="3050" />
+            </endOffsets>
+          </properties>
+          <option name="timeStamp" value="10" />
+        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
