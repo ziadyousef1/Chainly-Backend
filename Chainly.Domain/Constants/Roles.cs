@@ -1,4 +1,4 @@
-namespace Chainly.Data.Constants;
+namespace Chainly.Domain.Constants;
 
 public enum Roles
 {

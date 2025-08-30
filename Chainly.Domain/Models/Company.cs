@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Chainly.Data.Models
+namespace Chainly.Domain.Models
 {
     public class Company
     {
