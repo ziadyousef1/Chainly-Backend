@@ -1,4 +1,4 @@
-﻿using Chainly.Data.Constants;
+﻿using Chainly.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Chainly.Filters;

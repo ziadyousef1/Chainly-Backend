@@ -15,10 +15,13 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.4" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Chainly.Data\Chainly.Data.csproj" />
+    <ProjectReference Include="..\Chainly.Application\Chainly.Application.csproj" />
+    <ProjectReference Include="..\Chainly.Domain\Chainly.Domain.csproj" />
+    <ProjectReference Include="..\Chainly.Infrastructure\Chainly.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

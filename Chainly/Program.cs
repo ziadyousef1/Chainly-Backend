@@ -1,15 +1,16 @@
 
 using Chainly.Data;
-using Chainly.Data.Helpers;
-using Chainly.Data.MailService;
-using Chainly.Data.Models;
+using Chainly.Domain.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Chainly.Application.Extensions;
 using Chainly.Filters;
+using Chainly.Helpers;
+using Chainly.Infrastructure.MailService;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Chainly
@@ -25,7 +26,9 @@ namespace Chainly
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
-
+            builder.Services.AddSwaggerGen();
+            
+            
             builder.Services.AddDbContext<AppDbContext>(options =>
              options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -34,7 +37,7 @@ namespace Chainly
 
             builder.Services.AddTransient<IEmailSender, EmailSender>();
             
-            // Policy
+            builder.Services.AddApplicationServices();
             builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
             builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
@@ -65,7 +68,7 @@ namespace Chainly
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = jwtSettings["Issuer"],
                     ValidAudience = jwtSettings["Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? ""))
                 };
             });
 
@@ -75,12 +78,10 @@ namespace Chainly
             await DBIntializer.SeedAsync(app.Services);
 
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.MapOpenApi();
-            }
-
+          
+                app.UseSwaggerUI();
+                app.UseSwagger();
+           
             app.UseHttpsRedirection();
             app.UseAuthentication();
             app.UseAuthorization();
