@@ -14,6 +14,8 @@ namespace Chainly.Application.Extensions
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<ISupplierImportService, SupplierImportService>();
+            services.AddScoped<ISupplierService, SupplierService>();
+
 
             return services;
         }

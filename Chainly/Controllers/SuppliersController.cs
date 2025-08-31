@@ -1,20 +1,26 @@
+using Chainly.Application.DTOs;
+using Chainly.Application.Services.Implementation;
 using Chainly.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Chainly.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-   
+    [Authorize]
     public class SuppliersController : ControllerBase
     {
         private readonly ISupplierImportService _supplierImportService;
+        private readonly ISupplierService _service;
 
-        public SuppliersController(ISupplierImportService supplierImportService)
+        public SuppliersController(ISupplierImportService supplierImportService
+            , ISupplierService service)
         {
             _supplierImportService = supplierImportService;
+            _service = service;
         }
 
         [HttpPost("import")]
@@ -51,5 +57,45 @@ namespace Chainly.Controllers
 
             return Ok(new { importedCount, totalRecords = suppliers.Count() });
         }
+        [HttpGet("{companyId?}")]
+        public async Task<IActionResult> GetSuppliers([FromQuery] int? pageNumber, [FromQuery] int? pageSize)
+        {
+            
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized("User ID not found in token.");
+
+            var suppliers = await _service.GetSuppliersAsync(userIdClaim, pageNumber, pageSize);
+            return Ok(suppliers);
+        }
+
+        [HttpPost("{companyId}")]
+        public async Task<IActionResult> CreateSupplier(int companyId, [FromBody] SupplierDto dto)
+        {
+            var created = await _service.CreateSupplierAsync(dto, companyId);
+            if (created == null)
+                return NotFound($"Company with id {companyId} not found");
+
+            return CreatedAtAction(nameof(GetSuppliers), new { companyId = companyId }, created);
+        }
+
+        [HttpPut("{companyId}/{id}")]
+        public async Task<IActionResult> UpdateSupplier(int companyId, int id, [FromBody] SupplierDto dto)
+        {
+            var updated = await _service.UpdateSupplierAsync(id, dto, companyId);
+            if (!updated) return NotFound($"Supplier {id} not found or does not belong to Company {companyId}");
+
+            return Ok("Supplier Updated Successfully");
+        }
+        [HttpDelete("{companyId}/{id}")]
+        public async Task<IActionResult> DeleteSupplier(int companyId, int id)
+        {
+            var deleted = await _service.DeleteSupplierAsync(id, companyId);
+            if (!deleted) return NotFound($"Supplier {id} not found or does not belong to Company {companyId}");
+
+            return Ok("Supplier Deleted");
+        }
+
+
     }
 }

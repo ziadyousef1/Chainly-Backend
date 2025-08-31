@@ -15,8 +15,6 @@ namespace Chainly.Domain.Models
         public string ProductType { get; set; }
         public string Sector { get; set; }         
         public string FacilityType { get; set; }    
-
-       
         public int? CompanyId { get; set; }
         public Company Company { get; set; }
 

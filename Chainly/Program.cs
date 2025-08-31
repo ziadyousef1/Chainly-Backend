@@ -12,6 +12,8 @@ using Chainly.Filters;
 using Chainly.Helpers;
 using Chainly.Infrastructure.MailService;
 using Microsoft.AspNetCore.Authorization;
+using Chainly.Application.Services.Interfaces;
+using Chainly.Application.Services.Implementation;
 
 namespace Chainly
 {
