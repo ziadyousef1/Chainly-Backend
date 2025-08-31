@@ -1,8 +1,4 @@
-﻿using Chainly.Application.Interfaces;
-using Chainly.Application.Dtos;
-using Chainly.Infrastructure.MailService;
-using Chainly.Infrastructure.OTP_Validation;
-using Microsoft.AspNetCore.Mvc;
+﻿
 
 namespace Chainly.Controllers
 {

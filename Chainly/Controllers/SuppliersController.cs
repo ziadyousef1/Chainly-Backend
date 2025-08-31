@@ -1,10 +1,3 @@
-using Chainly.Application.DTOs;
-using Chainly.Application.Services.Implementation;
-using Chainly.Application.Services.Interfaces;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace Chainly.Controllers
 {

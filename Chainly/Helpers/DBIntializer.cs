@@ -1,17 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
-using Chainly.Data;
-using Chainly.Domain.Constants;
-using Chainly.Domain.Models;
-using Chainly.Application.Services.Interfaces;
-
-
+﻿
 namespace Chainly.Helpers
 {
     public static class DBIntializer
@@ -113,6 +100,7 @@ namespace Chainly.Helpers
                 if (!existingClaims.Any(c => c.Type == CustomClaimTypes.Permission && c.Value == permission))
                     await roleManager.AddClaimAsync(role, new Claim(CustomClaimTypes.Permission, permission));
             }
+          
         }
     }
 }

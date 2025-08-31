@@ -1,7 +1,4 @@
-﻿using Chainly.Domain.Constants;
-using Microsoft.AspNetCore.Authorization;
-
-namespace Chainly.Filters;
+﻿namespace Chainly.Filters;
 
 public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionRequirement>
 {

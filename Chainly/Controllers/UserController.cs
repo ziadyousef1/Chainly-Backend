@@ -1,7 +1,4 @@
-using Chainly.Application.Interfaces;
-using Chainly.Domain.Constants;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+
 
 namespace Chainly.Controllers
 {
