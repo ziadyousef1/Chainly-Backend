@@ -1,5 +1,3 @@
-
-
 namespace Chainly.Controllers
 {
     [ApiController]

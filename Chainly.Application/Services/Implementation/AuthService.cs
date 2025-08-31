@@ -96,6 +96,8 @@ namespace Chainly.Application.Services
 
             await _userManager.AddToRoleAsync(user, role);
 
+            await ResendVerificationCodeAsync(user.Email);
+            
             return new OkObjectResult(new { Message = "User registered successfully", Role = role, Company = company.Name });
         }
 
