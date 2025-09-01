@@ -6,7 +6,6 @@ var builder = WebApplication.CreateBuilder(args);
 //     .AddUserSecrets<Program>(optional: true);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
-builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("ProductionConnection")));
 
@@ -50,12 +49,12 @@ builder.Services.AddAuthentication(options =>
 var app = builder.Build();
 await DBIntializer.SeedAsync(app.Services);
 
-
-app.UseSwaggerUI();
-app.UseSwagger();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+app.MapOpenApi();
+app.MapScalarApiReference();
 
 app.Run();

@@ -19,3 +19,4 @@ global using Chainly.Domain.Constants;
 global using Chainly.Application.DTOs;
 global using Chainly.Application.Services.Interfaces;
 global using Microsoft.Extensions.Options;
+global using Scalar.AspNetCore;
