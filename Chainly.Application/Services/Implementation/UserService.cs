@@ -9,9 +9,9 @@ namespace Chainly.Application.Services
     public class UserService : IUserService
     {
         private readonly UserManager<User> _userManager;
-        private readonly RoleManager<IdentityRole<int>> _roleManager;
+        private readonly RoleManager<Role> _roleManager;
 
-        public UserService(UserManager<User> userManager, RoleManager<IdentityRole<int>> roleManager)
+        public UserService(UserManager<User> userManager, RoleManager<Role> roleManager)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -35,14 +35,22 @@ namespace Chainly.Application.Services
                 var userEntity = await _userManager.FindByIdAsync(user.Id.ToString());
                 if (userEntity != null)
                 {
-                    var roles = await _userManager.GetRolesAsync(userEntity);
+                    var roles = await _roleManager.Roles
+                        .Where(r => r.CompanyId == userEntity.CompanyId)
+                        .Select(r => r.Name)
+                        .ToListAsync();
+
+                    var userRoles = await _userManager.GetRolesAsync(userEntity);
+
+                    var filteredUserRoles = userRoles.Intersect(roles);
+
                     usersWithRoles.Add(new
                     {
                         user.Id,
                         user.UserName,
                         user.Email,
                         user.FullName,
-                        Roles = roles
+                        Roles = filteredUserRoles
                     });
                 }
             }
@@ -56,13 +64,17 @@ namespace Chainly.Application.Services
             if (user == null)
                 return new NotFoundObjectResult("User not found");
 
-            var allRoles = await _roleManager.Roles.ToListAsync();
+            var allRoles = await _roleManager.Roles
+                .Where(r => r.CompanyId == user.CompanyId)
+                .ToListAsync();
             var userRoles = await _userManager.GetRolesAsync(user);
+
+            var filteredUserRoles = userRoles.Intersect(allRoles.Select(r => r.Name));
 
             var result = allRoles.Select(r => new
             {
                 RoleName = r.Name,
-                IsSelected = userRoles.Contains(r.Name ?? "")
+                IsSelected = filteredUserRoles.Contains(r.Name ?? "")
             });
 
             return new OkObjectResult(result);
@@ -74,12 +86,18 @@ namespace Chainly.Application.Services
             if (user == null)
                 return new NotFoundObjectResult("User not found");
 
-            var currentRoles = await _userManager.GetRolesAsync(user);
+            var validRoles = await _roleManager.Roles
+                .Where(r => r.CompanyId == user.CompanyId)
+                .Select(r => r.Name)
+                .ToListAsync();
 
-            var rolesToRemove = currentRoles.Except(rolesToAssign);
+            var filteredRolesToAssign = rolesToAssign.Intersect(validRoles).ToList();
+
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            var rolesToRemove = currentRoles.Except(filteredRolesToAssign);
             await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
 
-            var rolesToAdd = rolesToAssign.Except(currentRoles);
+            var rolesToAdd = filteredRolesToAssign.Except(currentRoles);
             await _userManager.AddToRolesAsync(user, rolesToAdd);
 
             return new NoContentResult();

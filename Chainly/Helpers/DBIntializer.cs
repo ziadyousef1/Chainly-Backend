@@ -1,5 +1,4 @@
-﻿
-namespace Chainly.Helpers
+﻿namespace Chainly.Helpers
 {
     public static class DBIntializer
     {
@@ -7,20 +6,9 @@ namespace Chainly.Helpers
         {
             using (var scope = serviceProvider.CreateScope())
             {
-                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
+                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-                var roles = Enum.GetNames(typeof(Roles));
-                foreach (var role in roles)
-                {
-                    var roleExist = await roleManager.RoleExistsAsync(role);
-                    if (!roleExist)
-                    {
-                        await roleManager.CreateAsync(new IdentityRole<int>(role));
-                    }
-                }
-
 
                 if (!context.Companies.Any())
                 {
@@ -41,6 +29,16 @@ namespace Chainly.Helpers
                         }
                     );
                     await context.SaveChangesAsync();
+                }
+
+                var roles = Enum.GetNames(typeof(Roles));
+                foreach (var role in roles)
+                {
+                    var roleExist = await roleManager.RoleExistsAsync(role);
+                    if (!roleExist)
+                    {
+                        await roleManager.CreateAsync(new Role { Name = role, CompanyId = 1 });
+                    }
                 }
 
                 var defaultUser = new User
@@ -74,12 +72,12 @@ namespace Chainly.Helpers
             if (supplierImportService == null) return;
 
             var excelFilePath = Path.Combine("suppliers.xlsx");
-            
-            if(File.Exists(excelFilePath))
+
+            if (File.Exists(excelFilePath))
             {
                 var suppliers = await supplierImportService.ReadSuppliersFromExcelAsync(excelFilePath);
                 var isValid = await supplierImportService.ValidateSupplierDataAsync(suppliers);
-                
+
                 if (isValid)
                 {
                     await supplierImportService.ImportSuppliersAsync(suppliers, companyId: 1);
@@ -87,7 +85,7 @@ namespace Chainly.Helpers
             }
         }
 
-        public static async Task SeedAllPermissions(this RoleManager<IdentityRole<int>> roleManager, string roleName)
+        public static async Task SeedAllPermissions(this RoleManager<Role> roleManager, string roleName)
         {
             var role = await roleManager.FindByNameAsync(roleName);
             if (role == null) return;
@@ -100,7 +98,6 @@ namespace Chainly.Helpers
                 if (!existingClaims.Any(c => c.Type == CustomClaimTypes.Permission && c.Value == permission))
                     await roleManager.AddClaimAsync(role, new Claim(CustomClaimTypes.Permission, permission));
             }
-          
         }
     }
 }

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Chainly.Data
 {
-    public class AppDbContext : IdentityDbContext<User, IdentityRole<int>, int>
+    public class AppDbContext : IdentityDbContext<User, Role, int>
     {
         public DbSet<Company> Companies { get; set; }
         public DbSet<ProductionLine> ProductionLines { get; set; }
@@ -69,6 +69,10 @@ namespace Chainly.Data
                 .WithMany()
                 .HasForeignKey(ot => ot.UpdatedBy)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Role>()
+                .HasIndex(r => new { r.Name, r.CompanyId })
+                .IsUnique();
         }
     }
 }

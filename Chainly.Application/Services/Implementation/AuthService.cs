@@ -20,13 +20,13 @@ namespace Chainly.Application.Services
     public class AuthService : IAuthService
     {
         private readonly UserManager<User> _userManager;
-        private readonly RoleManager<IdentityRole<int>> _roleManager;
+        private readonly RoleManager<Role> _roleManager;
         private readonly IConfiguration _config;
         private readonly AppDbContext _context;
         private readonly IEmailSender _emailSender;
 
         public AuthService(UserManager<User> userManager,
-            RoleManager<IdentityRole<int>> roleManager,
+            RoleManager<Role> roleManager,
             IConfiguration config,
             AppDbContext context,
             IEmailSender emailSender)
@@ -43,18 +43,18 @@ namespace Chainly.Application.Services
             var company = await _context.Companies
                 .FirstOrDefaultAsync(c => c.Name.ToLower() == model.CompanyName.ToLower());
 
-            if (company == null)
+            if (company != null)
+                return new BadRequestObjectResult(new { Message = "A company with this name already exists." });
+
+            company = new Company
             {
-                company = new Company
-                {
-                    Name = model.CompanyName,
-                    LocationLatitude = model.LocationLatitude,
-                    LocationLongitude = model.LocationLongitude,
-                    Logo = null
-                };
-                _context.Companies.Add(company);
-                await _context.SaveChangesAsync();
-            }
+                Name = model.CompanyName,
+                LocationLatitude = model.LocationLatitude,
+                LocationLongitude = model.LocationLongitude,
+                Logo = null
+            };
+            _context.Companies.Add(company);
+            await _context.SaveChangesAsync();
 
             var user = new User
             {
@@ -69,36 +69,28 @@ namespace Chainly.Application.Services
             if (!result.Succeeded)
                 return new BadRequestObjectResult(result.Errors);
 
-            string role;
-            var usersInCompany = await _userManager.Users.CountAsync(u => u.CompanyId == company.Id);
+            var role = new Role { Name = "Manager", CompanyId = company.Id, NormalizedName = "MANAGER"};
+            _context.Roles.Add(role);
+            await _context.SaveChangesAsync();
 
-            if (usersInCompany == 1)
+            var allPermissions = Permissions.GenerateAllPermissions();
+            foreach (var perm in allPermissions)
             {
-                role = "Manager";
-            }
-            else
-            {
-                if (!string.IsNullOrEmpty(model.Role))
-                {
-                    if (model.Role == "Manager" || model.Role == "Employee")
-                        role = model.Role;
-                    else
-                        role = "Employee";
-                }
-                else
-                    role = "Employee";
+                await _roleManager.AddClaimAsync(role, new Claim(CustomClaimTypes.Permission, perm));
             }
 
-            if (!await _roleManager.RoleExistsAsync(role))
+            _context.UserRoles.Add(new IdentityUserRole<int>
             {
-                await _roleManager.CreateAsync(new IdentityRole<int>(role));
-            }
+                UserId = user.Id,
+                RoleId = role.Id
+            });
 
-            await _userManager.AddToRoleAsync(user, role);
+            await _context.SaveChangesAsync();
 
             await ResendVerificationCodeAsync(user.Email);
-            
-            return new OkObjectResult(new { Message = "User registered successfully", Role = role, Company = company.Name });
+
+            return new OkObjectResult(new
+                { Message = "User registered successfully", Role = role, Company = company.Name });
         }
 
         public async Task<IActionResult> LoginAsync(LoginDto model)
@@ -140,7 +132,7 @@ namespace Chainly.Application.Services
         public async Task<IActionResult> ResetPasswordAsync(string email, string token, string newPassword)
         {
             var user = await _userManager.FindByEmailAsync(email);
-            if (user == null) 
+            if (user == null)
                 return new NotFoundObjectResult("User Not Found !");
 
             var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
@@ -211,9 +203,16 @@ namespace Chainly.Application.Services
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
 
-                claims.AddRange((await _roleManager.GetClaimsAsync(await _roleManager.FindByNameAsync(role)))
-                    .Where(c => c.Type == CustomClaimTypes.Permission)
-                    .Select(c => new Claim(CustomClaimTypes.Permission, c.Value)));
+                var roleEntity = await _roleManager.Roles
+                    .FirstOrDefaultAsync(r => r.Name == role && r.CompanyId == user.CompanyId);
+
+                if (roleEntity != null)
+                {
+                    var roleClaims = await _roleManager.GetClaimsAsync(roleEntity);
+                    claims.AddRange(roleClaims
+                        .Where(c => c.Type == CustomClaimTypes.Permission)
+                        .Select(c => new Claim(CustomClaimTypes.Permission, c.Value)));
+                }
             }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]));
