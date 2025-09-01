@@ -15,6 +15,9 @@ namespace Chainly.Data
         public DbSet<Supplier> Suppliers { get; set; }
         public DbSet<SupplierMaterial> SupplierMaterials { get; set; }
         public DbSet<DefectiveProduct> DefectiveProducts { get; set; }
+
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<OrderTracking> OrderTracking { get; set; }
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
         }
@@ -52,6 +55,20 @@ namespace Chainly.Data
                 .WithMany(m => m.SupplierMaterials)
                 .HasForeignKey(sm => sm.MaterialId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Order>()
+                .HasKey(o => new { o.OrderId, o.CompanyId });
+
+            builder.Entity<OrderTracking>()
+                .HasOne(ot => ot.Order)
+                .WithMany(o => o.Trackings)
+                .HasForeignKey(ot => new { ot.OrderId, ot.CompanyId });
+
+            builder.Entity<OrderTracking>()
+                .HasOne(ot => ot.UpdatedByNavigation)
+                .WithMany()
+                .HasForeignKey(ot => ot.UpdatedBy)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

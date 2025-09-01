@@ -22,7 +22,7 @@ namespace Chainly.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Chainly.Data.Models.Company", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.Company", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -50,7 +50,7 @@ namespace Chainly.Data.Migrations
                     b.ToTable("Companies");
                 });
 
-            modelBuilder.Entity("Chainly.Data.Models.DefectiveProduct", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.DefectiveProduct", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -78,7 +78,7 @@ namespace Chainly.Data.Migrations
                     b.ToTable("DefectiveProducts");
                 });
 
-            modelBuilder.Entity("Chainly.Data.Models.Material", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.Material", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -102,7 +102,71 @@ namespace Chainly.Data.Migrations
                     b.ToTable("Material");
                 });
 
-            modelBuilder.Entity("Chainly.Data.Models.ProductionLine", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.Order", b =>
+                {
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("OrderId", "CompanyId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.ToTable("Order");
+                });
+
+            modelBuilder.Entity("Chainly.Domain.Models.OrderTracking", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("float");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UpdatedBy");
+
+                    b.HasIndex("OrderId", "CompanyId");
+
+                    b.ToTable("OrderTracking");
+                });
+
+            modelBuilder.Entity("Chainly.Domain.Models.ProductionLine", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -127,7 +191,7 @@ namespace Chainly.Data.Migrations
                     b.ToTable("ProductionLines");
                 });
 
-            modelBuilder.Entity("Chainly.Data.Models.Report", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.Report", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -151,7 +215,7 @@ namespace Chainly.Data.Migrations
                     b.ToTable("Reports");
                 });
 
-            modelBuilder.Entity("Chainly.Data.Models.Supplier", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.Supplier", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -193,7 +257,7 @@ namespace Chainly.Data.Migrations
                     b.ToTable("Suppliers");
                 });
 
-            modelBuilder.Entity("Chainly.Data.Models.SupplierMaterial", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.SupplierMaterial", b =>
                 {
                     b.Property<int>("SupplierId")
                         .HasColumnType("int");
@@ -208,7 +272,7 @@ namespace Chainly.Data.Migrations
                     b.ToTable("SupplierMaterials");
                 });
 
-            modelBuilder.Entity("Chainly.Data.Models.User", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -427,9 +491,9 @@ namespace Chainly.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("Chainly.Data.Models.DefectiveProduct", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.DefectiveProduct", b =>
                 {
-                    b.HasOne("Chainly.Data.Models.Report", "Report")
+                    b.HasOne("Chainly.Domain.Models.Report", "Report")
                         .WithMany("DefectiveProducts")
                         .HasForeignKey("ReportId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -438,9 +502,9 @@ namespace Chainly.Data.Migrations
                     b.Navigation("Report");
                 });
 
-            modelBuilder.Entity("Chainly.Data.Models.ProductionLine", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.Order", b =>
                 {
-                    b.HasOne("Chainly.Data.Models.Company", "Company")
+                    b.HasOne("Chainly.Domain.Models.Company", "Company")
                         .WithMany()
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -449,9 +513,39 @@ namespace Chainly.Data.Migrations
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("Chainly.Data.Models.Report", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.OrderTracking", b =>
                 {
-                    b.HasOne("Chainly.Data.Models.ProductionLine", "ProductionLine")
+                    b.HasOne("Chainly.Domain.Models.User", "UpdatedByNavigation")
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Chainly.Domain.Models.Order", "Order")
+                        .WithMany("Trackings")
+                        .HasForeignKey("OrderId", "CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("UpdatedByNavigation");
+                });
+
+            modelBuilder.Entity("Chainly.Domain.Models.ProductionLine", b =>
+                {
+                    b.HasOne("Chainly.Domain.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+                });
+
+            modelBuilder.Entity("Chainly.Domain.Models.Report", b =>
+                {
+                    b.HasOne("Chainly.Domain.Models.ProductionLine", "ProductionLine")
                         .WithMany("Reports")
                         .HasForeignKey("productionLineId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -460,24 +554,24 @@ namespace Chainly.Data.Migrations
                     b.Navigation("ProductionLine");
                 });
 
-            modelBuilder.Entity("Chainly.Data.Models.Supplier", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.Supplier", b =>
                 {
-                    b.HasOne("Chainly.Data.Models.Company", "Company")
+                    b.HasOne("Chainly.Domain.Models.Company", "Company")
                         .WithMany()
                         .HasForeignKey("CompanyId");
 
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("Chainly.Data.Models.SupplierMaterial", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.SupplierMaterial", b =>
                 {
-                    b.HasOne("Chainly.Data.Models.Material", "Material")
+                    b.HasOne("Chainly.Domain.Models.Material", "Material")
                         .WithMany("SupplierMaterials")
                         .HasForeignKey("MaterialId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Chainly.Data.Models.Supplier", "Supplier")
+                    b.HasOne("Chainly.Domain.Models.Supplier", "Supplier")
                         .WithMany("SupplierMaterials")
                         .HasForeignKey("SupplierId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -488,9 +582,9 @@ namespace Chainly.Data.Migrations
                     b.Navigation("Supplier");
                 });
 
-            modelBuilder.Entity("Chainly.Data.Models.User", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.User", b =>
                 {
-                    b.HasOne("Chainly.Data.Models.Company", "Company")
+                    b.HasOne("Chainly.Domain.Models.Company", "Company")
                         .WithMany("Users")
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -510,7 +604,7 @@ namespace Chainly.Data.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<int>", b =>
                 {
-                    b.HasOne("Chainly.Data.Models.User", null)
+                    b.HasOne("Chainly.Domain.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -519,7 +613,7 @@ namespace Chainly.Data.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<int>", b =>
                 {
-                    b.HasOne("Chainly.Data.Models.User", null)
+                    b.HasOne("Chainly.Domain.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -534,7 +628,7 @@ namespace Chainly.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Chainly.Data.Models.User", null)
+                    b.HasOne("Chainly.Domain.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -543,34 +637,39 @@ namespace Chainly.Data.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<int>", b =>
                 {
-                    b.HasOne("Chainly.Data.Models.User", null)
+                    b.HasOne("Chainly.Domain.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Chainly.Data.Models.Company", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.Company", b =>
                 {
                     b.Navigation("Users");
                 });
 
-            modelBuilder.Entity("Chainly.Data.Models.Material", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.Material", b =>
                 {
                     b.Navigation("SupplierMaterials");
                 });
 
-            modelBuilder.Entity("Chainly.Data.Models.ProductionLine", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.Order", b =>
+                {
+                    b.Navigation("Trackings");
+                });
+
+            modelBuilder.Entity("Chainly.Domain.Models.ProductionLine", b =>
                 {
                     b.Navigation("Reports");
                 });
 
-            modelBuilder.Entity("Chainly.Data.Models.Report", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.Report", b =>
                 {
                     b.Navigation("DefectiveProducts");
                 });
 
-            modelBuilder.Entity("Chainly.Data.Models.Supplier", b =>
+            modelBuilder.Entity("Chainly.Domain.Models.Supplier", b =>
                 {
                     b.Navigation("SupplierMaterials");
                 });
