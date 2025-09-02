@@ -4,7 +4,7 @@ namespace Chainly.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class RolesController : ControllerBase
+    public class RolesController : BaseController
     {
         private readonly IRoleService _roleService;
 
@@ -17,7 +17,7 @@ namespace Chainly.Controllers
         [Authorize(Permissions.Roles.View)]
         public async Task<IActionResult> GetRoles()
         {
-            int companyId = GetCompanyIdFromToken();
+            int companyId = GetCompanyId();
             var roles = await _roleService.GetRolesAsync(companyId);
 
             var result = roles.Select(r => new RoleDto
@@ -35,7 +35,7 @@ namespace Chainly.Controllers
         [Authorize(Permissions.Roles.Create)]
         public async Task<IActionResult> AddRole([FromBody] RoleCreateDto model)
         {
-            int companyId = GetCompanyIdFromToken();
+            int companyId = GetCompanyId();
             var (success, message) = await _roleService.AddRoleAsync(model.Name, companyId);
 
             if (!success)
@@ -48,7 +48,7 @@ namespace Chainly.Controllers
         [Authorize(Permissions.Roles.View)]
         public async Task<IActionResult> GetPermissions(int roleId)
         {
-            int companyId = GetCompanyIdFromToken();
+            int companyId = GetCompanyId();
             var result = await _roleService.GetPermissionsAsync(roleId, companyId);
 
             if (result is null)
@@ -72,7 +72,7 @@ namespace Chainly.Controllers
         [Authorize(Permissions.Roles.Update)]
         public async Task<IActionResult> UpdatePermissions(int roleId, [FromBody] RoleUpdatePermissionsDto model)
         {
-            int companyId = GetCompanyIdFromToken();
+            int companyId = GetCompanyId();
             var (success, message) =
                 await _roleService.UpdatePermissionsAsync(roleId, companyId, model.SelectedPermissions);
 
@@ -80,15 +80,6 @@ namespace Chainly.Controllers
                 return NotFound(new { message });
 
             return Ok(new { message });
-        }
-
-        private int GetCompanyIdFromToken()
-        {
-            var companyIdClaim = User.Claims.FirstOrDefault(c => c.Type == "companyId")?.Value;
-            if (companyIdClaim == null)
-                throw new UnauthorizedAccessException("CompanyId not found in token.");
-
-            return int.Parse(companyIdClaim);
         }
     }
 }

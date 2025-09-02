@@ -69,7 +69,7 @@ namespace Chainly.Application.Services
             if (!result.Succeeded)
                 return new BadRequestObjectResult(result.Errors);
 
-            var role = new Role { Name = "Manager", CompanyId = company.Id, NormalizedName = "MANAGER"};
+            var role = new Role { Name = "Manager", CompanyId = company.Id, NormalizedName = "MANAGER" };
             _context.Roles.Add(role);
             await _context.SaveChangesAsync();
 
@@ -89,8 +89,7 @@ namespace Chainly.Application.Services
 
             await ResendVerificationCodeAsync(user.Email);
 
-            return new OkObjectResult(new
-                { Message = "User registered successfully", Role = role, Company = company.Name });
+            return new OkObjectResult(new { Message = "User registered successfully" });
         }
 
         public async Task<IActionResult> LoginAsync(LoginDto model)

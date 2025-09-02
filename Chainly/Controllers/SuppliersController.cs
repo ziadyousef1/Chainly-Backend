@@ -4,7 +4,7 @@ namespace Chainly.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class SuppliersController : ControllerBase
+    public class SuppliersController : BaseController
     {
         private readonly ISupplierImportService _supplierImportService;
         private readonly ISupplierService _service;
