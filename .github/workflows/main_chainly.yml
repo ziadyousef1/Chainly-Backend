@@ -49,7 +49,7 @@ jobs:
           name: .net-app
       
       - name: Login to Azure
-        uses: azure/login@v2
+        uses: azure/login@v1
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_B6C08198CE92427481E93FBEB96604CF }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_5313BF0184194690AB28F73B562023FF }}
@@ -62,4 +62,5 @@ jobs:
           app-name: 'chainly'
           slot-name: 'Production'
           package: .
+
           
