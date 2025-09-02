@@ -2,10 +2,13 @@ using Chainly.Application.Services.Implementation;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration
-    .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", optional: false)
-    .AddUserSecrets<Program>(optional: true);
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration
+        .SetBasePath(Directory.GetCurrentDirectory())
+        .AddJsonFile("appsettings.json", optional: false)
+        .AddUserSecrets<Program>(optional: true);
+}
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -61,6 +64,9 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.MapOpenApi();
-app.MapScalarApiReference();
+app.MapScalarApiReference(options =>
+{
+    options.Theme = ScalarTheme.Mars;
+});
 
 app.Run();
