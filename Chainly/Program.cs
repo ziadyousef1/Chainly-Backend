@@ -10,10 +10,13 @@ if (builder.Environment.IsDevelopment())
         .AddUserSecrets<Program>(optional: true);
 }
 
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("ProductionConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString(builder.Environment.IsDevelopment()
+        ? "DefaultConnection"
+        : "ProductionConnection")));
 
 var emailconfig = builder.Configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
 builder.Services.AddSingleton(emailconfig);
@@ -64,9 +67,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.MapOpenApi();
-app.MapScalarApiReference(options =>
-{
-    options.Theme = ScalarTheme.Mars;
-});
+app.MapScalarApiReference(options => { options.Theme = ScalarTheme.Mars; });
 
 app.Run();
