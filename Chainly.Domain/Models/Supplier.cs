@@ -10,8 +10,8 @@ namespace Chainly.Domain.Models
     {
         public int Id { get; set; }
         public string Name { get; set; }
-        public string LocationLongitude { get; set; }
-        public string LocationLatitude { get; set; }
+        public decimal LocationLongitude { get; set; }
+        public decimal LocationLatitude { get; set; }
         public string Sector { get; set; }
         public string FacilityType { get; set; }    
         public int? CompanyId { get; set; }

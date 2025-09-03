@@ -31,8 +31,8 @@ namespace Chainly.Application.Services.Implementation
                 var supplier = new SupplierImportDto
                 {
                     Name = GetCellValue(worksheet, row, 3)?.ToString() ?? string.Empty,
-                    LocationLatitude = GetCellValue(worksheet, row, 7)?.ToString(),
-                    LocationLongitude = GetCellValue(worksheet, row, 8)?.ToString(),
+                    LocationLatitude = GetCellValue(worksheet, row, 7),
+                    LocationLongitude = GetCellValue(worksheet, row, 8),
                     Sector = GetCellValue(worksheet, row, 9)?.ToString(),
                     FacilityType = GetCellValue(worksheet, row, 14)?.ToString(),
                     ProductType = GetCellValue(worksheet, row, 16)?.ToString()
@@ -78,10 +78,10 @@ namespace Chainly.Application.Services.Implementation
                 if (string.IsNullOrWhiteSpace(supplier.Name))
                     errors.Add($"Row {index + 1}: Name is required");
 
-                if (!string.IsNullOrEmpty(supplier.LocationLatitude) && !IsValidLatitude(supplier.LocationLatitude))
+                if (supplier.LocationLatitude < -90m || supplier.LocationLatitude > 90m)
                     errors.Add($"Row {index + 1}: Invalid latitude value");
 
-                if (!string.IsNullOrEmpty(supplier.LocationLongitude) && !IsValidLongitude(supplier.LocationLongitude))
+                if (supplier.LocationLongitude < -180m || supplier.LocationLongitude > 180m)
                     errors.Add($"Row {index + 1}: Invalid longitude value");
             }
 
@@ -93,17 +93,23 @@ namespace Chainly.Application.Services.Implementation
             return new Supplier
             {
                 Name = dto.Name,
-                LocationLatitude = dto.LocationLatitude ?? "0",
-                LocationLongitude = dto.LocationLongitude ?? "0",
+                LocationLatitude = dto.LocationLatitude ?? 0,
+                LocationLongitude = dto.LocationLongitude ?? 0,
                 Sector = dto.Sector ?? "Unknown",
                 FacilityType = dto.FacilityType ?? "Unknown",
                 CompanyId = companyId
             };
         }
 
-        private object? GetCellValue(ExcelWorksheet worksheet, int row, int col)
+        private decimal? GetCellValue(ExcelWorksheet worksheet, int row, int col)
         {
-            return worksheet.Cells[row, col].Value;
+            var value = worksheet.Cells[row, col].Value;
+            if (value == null) return 0m;
+
+            return decimal.TryParse(value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var result)
+                ? result
+                : 0m;
+
         }
 
         private bool IsValidLatitude(string latitude)

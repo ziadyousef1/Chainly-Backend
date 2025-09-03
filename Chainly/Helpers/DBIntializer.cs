@@ -16,15 +16,15 @@
                         new Company
                         {
                             Name = "OpenAI",
-                            LocationLatitude = "37.7749",
-                            LocationLongitude = "-122.4194",
+                            LocationLatitude = (decimal)37.7749,
+                            LocationLongitude = (decimal)-122.4194,
                             Logo = null
                         },
                         new Company
                         {
                             Name = "Microsoft",
-                            LocationLatitude = "47.6062",
-                            LocationLongitude = "-122.3321",
+                            LocationLatitude = (decimal)47.6062,
+                            LocationLongitude = (decimal)-122.3321,
                             Logo = null
                         }
                     );

@@ -7,9 +7,9 @@ namespace Chainly.Application.DTOs
         [Required]
         public string Name { get; set; } = string.Empty;
         
-        public string? LocationLatitude { get; set; }
+        public decimal? LocationLatitude { get; set; }
         
-        public string? LocationLongitude { get; set; }
+        public decimal? LocationLongitude { get; set; }
         
         public string? Sector { get; set; }
         
