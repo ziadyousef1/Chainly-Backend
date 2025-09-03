@@ -2,50 +2,73 @@ namespace Chainly.Domain.Constants;
 
 public static class Permissions
 {
-    public static List<string> GeneratePermissionsList(string module)
+    public static Dictionary<string, List<string>> GenerateAllPermissions()
     {
-        return new List<string>
-        {
-            $"Permissions.{module}.View",
-            $"Permissions.{module}.Delete",
-            $"Permissions.{module}.Create",
-            $"Permissions.{module}.Update",
-        };
+        return typeof(Permissions)
+            .GetNestedTypes()
+            .ToDictionary(
+                t => t.Name,
+                t => t.GetFields()
+                    .Select(f => f.GetValue(null))
+                    .OfType<string>()
+                    .ToList()
+            );
     }
 
-    public static List<string> GenerateAllPermissions()
-    {
-        var allPermissions = new List<string>();
-        var modules = Enum.GetNames(typeof(Modules));
-        foreach (var module in modules)
-        {
-            allPermissions.AddRange(GeneratePermissionsList(module));
-        }
-
-        return allPermissions;
-    }
 
     public static class Users
     {
-        public const string View = "Permissions.Users.View";
-        public const string Delete = "Permissions.Users.Delete";
-        public const string Create = "Permissions.Users.Create";
-        public const string Update = "Permissions.Users.Update";
+        public const string View = "Users.View";
+        public const string Create = "Users.Create";
+        public const string Update = "Users.Update";
+        public const string Delete = "Users.Delete";
     }
 
     public static class Roles
     {
-        public const string View = "Permissions.Roles.View";
-        public const string Delete = "Permissions.Roles.Delete";
-        public const string Create = "Permissions.Roles.Create";
-        public const string Update = "Permissions.Roles.Update";
+        public const string View = "Roles.View";
+        public const string Create = "Roles.Create";
+        public const string Update = "Roles.Update";
+        public const string Delete = "Roles.Delete";
     }
 
     public static class Suppliers
     {
-        public const string View = "Permissions.Suppliers.View";
-        public const string Delete = "Permissions.Suppliers.Delete";
-        public const string Create = "Permissions.Suppliers.Create";
-        public const string Update = "Permissions.Suppliers.Update";
+        public const string View = "Suppliers.View";
+        public const string Create = "Suppliers.Create";
+        public const string Update = "Suppliers.Update";
+        public const string Delete = "Suppliers.Delete";
+    }
+
+    public static class Companies
+    {
+        public const string View = "Companies.View";
+        public const string Create = "Companies.Create";
+        public const string Update = "Companies.Update";
+        public const string Delete = "Companies.Delete";
+    }
+
+    public static class Materials
+    {
+        public const string View = "Materials.View";
+        public const string Create = "Materials.Create";
+        public const string Update = "Materials.Update";
+        public const string Delete = "Materials.Delete";
+    }
+
+    public static class ProductionLines
+    {
+        public const string View = "ProductionLines.View";
+        public const string Create = "ProductionLines.Create";
+        public const string Update = "ProductionLines.Update";
+        public const string Delete = "ProductionLines.Delete";
+    }
+
+    public static class Reports
+    {
+        public const string View = "Reports.View";
+        public const string Create = "Reports.Create";
+        public const string Update = "Reports.Update";
+        public const string Delete = "Reports.Delete";
     }
 }

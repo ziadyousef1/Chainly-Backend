@@ -74,10 +74,11 @@ namespace Chainly.Application.Services
             await _context.SaveChangesAsync();
 
             var allPermissions = Permissions.GenerateAllPermissions();
-            foreach (var perm in allPermissions)
+            foreach (var perm in allPermissions.SelectMany(kvp => kvp.Value))
             {
                 await _roleManager.AddClaimAsync(role, new Claim(CustomClaimTypes.Permission, perm));
             }
+
 
             _context.UserRoles.Add(new IdentityUserRole<int>
             {

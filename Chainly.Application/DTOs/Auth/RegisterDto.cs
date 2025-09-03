@@ -14,7 +14,5 @@ namespace Chainly.Application.Dtos
         public string CompanyName { get; set; }
         public string LocationLatitude { get; set; }  
         public string LocationLongitude { get; set; } 
-        public string Role { get; set; }
-
     }
 }

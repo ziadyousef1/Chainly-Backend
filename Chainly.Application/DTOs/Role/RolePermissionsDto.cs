@@ -4,5 +4,6 @@ public class RolePermissionsDto
 {
     public int RoleId { get; set; }
     public string RoleName { get; set; } = string.Empty;
-    public IEnumerable<PermissionDto> Permissions { get; set; } = Array.Empty<PermissionDto>();
+    public Dictionary<string, List<PermissionDto>> Permissions { get; set; } = new();
+
 }

@@ -31,14 +31,14 @@
                     await context.SaveChangesAsync();
                 }
 
-                var roles = Enum.GetNames(typeof(Roles));
-                foreach (var role in roles)
+                var role = await context.Roles
+                    .FirstOrDefaultAsync(r => r.Name == "Manager" && r.CompanyId == 1);
+
+                if (role == null)
                 {
-                    var roleExist = await roleManager.RoleExistsAsync(role);
-                    if (!roleExist)
-                    {
-                        await roleManager.CreateAsync(new Role { Name = role, CompanyId = 1 });
-                    }
+                    role = new Role { Name = "Manager", CompanyId = 1, NormalizedName = "MANAGER" };
+                    context.Roles.Add(role);
+                    await context.SaveChangesAsync();
                 }
 
                 var defaultUser = new User
@@ -61,7 +61,7 @@
                     });
                 }
 
-                await roleManager.SeedAllPermissions(Roles.Manager.ToString());
+                await roleManager.SeedAllPermissions(role);
                 await SeedSuppliersFromExcelAsync(scope.ServiceProvider);
             }
         }
@@ -85,18 +85,22 @@
             }
         }
 
-        public static async Task SeedAllPermissions(this RoleManager<Role> roleManager, string roleName)
+        public static async Task SeedAllPermissions(this RoleManager<Role> roleManager, Role role)
         {
-            var role = await roleManager.FindByNameAsync(roleName);
             if (role == null) return;
 
             var existingClaims = await roleManager.GetClaimsAsync(role);
             var allPermissions = Permissions.GenerateAllPermissions();
 
-            foreach (var permission in allPermissions)
+            foreach (var modulePermissions in allPermissions)
             {
-                if (!existingClaims.Any(c => c.Type == CustomClaimTypes.Permission && c.Value == permission))
-                    await roleManager.AddClaimAsync(role, new Claim(CustomClaimTypes.Permission, permission));
+                foreach (var permission in modulePermissions.Value)
+                {
+                    if (!existingClaims.Any(c => c.Type == CustomClaimTypes.Permission && c.Value == permission))
+                    {
+                        await roleManager.AddClaimAsync(role, new Claim(CustomClaimTypes.Permission, permission));
+                    }
+                }
             }
         }
     }

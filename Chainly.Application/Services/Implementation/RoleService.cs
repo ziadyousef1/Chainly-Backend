@@ -31,7 +31,6 @@ public class RoleService : IRoleService
         {
             Id = r.Id,
             Name = r.Name,
-            CompanyId = r.CompanyId
         });
     }
 
@@ -57,11 +56,7 @@ public class RoleService : IRoleService
 
         await _context.SaveChangesAsync();
 
-        var result = await _roleManager.CreateAsync(role);
-
-        return result.Succeeded
-            ? (true, "Role created successfully")
-            : (false, string.Join(", ", result.Errors.Select(e => e.Description)));
+        return (true, "Role created successfully");
     }
 
     public async Task<RolePermissionsDto?> GetPermissionsAsync(int roleId, int companyId)
@@ -73,22 +68,25 @@ public class RoleService : IRoleService
             return null;
 
         var roleClaims = await _roleManager.GetClaimsAsync(role);
-        var modules = Enum.GetNames(typeof(Modules));
-        var allPermissions = modules.SelectMany(m => Permissions.GeneratePermissionsList(m)).ToList();
+        var permissions = Permissions.GenerateAllPermissions();
 
-        var permissions = allPermissions.Select(p => new PermissionDto
-        {
-            Name = p,
-            IsAssigned = roleClaims.Any(c => c.Type == CustomClaimTypes.Permission && c.Value == p)
-        }).ToList();
+        var assignedPermissions = permissions.ToDictionary(
+            kvp => kvp.Key,
+            kvp => kvp.Value.Select(p => new PermissionDto
+            {
+                Name = p,
+                IsAssigned = roleClaims.Any(c => c.Type == CustomClaimTypes.Permission && c.Value == p)
+            }).ToList()
+        );
 
         return new RolePermissionsDto
         {
             RoleId = role.Id,
             RoleName = role.Name,
-            Permissions = permissions
+            Permissions = assignedPermissions
         };
     }
+
 
     public async Task<(bool Success, string Message)> UpdatePermissionsAsync(int roleId, int companyId,
         string[] selectedPermissions)

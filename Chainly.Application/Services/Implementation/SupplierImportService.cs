@@ -95,7 +95,6 @@ namespace Chainly.Application.Services.Implementation
                 Name = dto.Name,
                 LocationLatitude = dto.LocationLatitude ?? "0",
                 LocationLongitude = dto.LocationLongitude ?? "0",
-                ProductType = dto.ProductType ?? "Unknown",
                 Sector = dto.Sector ?? "Unknown",
                 FacilityType = dto.FacilityType ?? "Unknown",
                 CompanyId = companyId

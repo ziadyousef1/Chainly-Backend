@@ -46,7 +46,6 @@ namespace Chainly.Application.Services.Implementation
                     Longitude = s.LocationLongitude,
                     CompanyId = s.CompanyId,
                     FacilityType = s.FacilityType,
-                    ProductType = s.ProductType,
                     Sector = s.Sector
                 }).ToListAsync();
 
@@ -105,7 +104,6 @@ namespace Chainly.Application.Services.Implementation
                 LocationLongitude = dto.Longitude,
                 CompanyId = companyId,
                 FacilityType = string.IsNullOrEmpty(dto.FacilityType) ? "Unknown" : dto.FacilityType,
-                ProductType = string.IsNullOrEmpty(dto.ProductType) ? "General" : dto.ProductType,
                 Sector = string.IsNullOrEmpty(dto.Sector) ? "Other" : dto.Sector
             };
 
@@ -128,7 +126,6 @@ namespace Chainly.Application.Services.Implementation
                 Longitude = supplier.LocationLongitude,
                 CompanyId = supplier.CompanyId,
                 FacilityType = supplier.FacilityType,
-                ProductType = supplier.ProductType,
                 Sector = supplier.Sector,
                 Distance = distance
             };
@@ -143,7 +140,6 @@ namespace Chainly.Application.Services.Implementation
             supplier.LocationLatitude = dto.Latitude;
             supplier.LocationLongitude = dto.Longitude;
             supplier.FacilityType = string.IsNullOrEmpty(dto.FacilityType) ? supplier.FacilityType : dto.FacilityType;
-            supplier.ProductType = string.IsNullOrEmpty(dto.ProductType) ? supplier.ProductType : dto.ProductType;
             supplier.Sector = string.IsNullOrEmpty(dto.Sector) ? supplier.Sector : dto.Sector;
 
             _context.Suppliers.Update(supplier);

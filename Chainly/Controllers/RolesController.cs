@@ -24,7 +24,6 @@ namespace Chainly.Controllers
             {
                 Id = r.Id,
                 Name = r.Name,
-                CompanyId = r.CompanyId
             });
 
             return Ok(result);
@@ -54,18 +53,7 @@ namespace Chainly.Controllers
             if (result is null)
                 return NotFound();
 
-            var dto = new RolePermissionsDto
-            {
-                RoleId = result.RoleId,
-                RoleName = result.RoleName,
-                Permissions = result.Permissions.Select(p => new PermissionDto
-                {
-                    Name = p.Name,
-                    IsAssigned = p.IsAssigned
-                })
-            };
-
-            return Ok(dto);
+            return Ok(result);
         }
 
         [HttpPut("{roleId}/permissions")]
