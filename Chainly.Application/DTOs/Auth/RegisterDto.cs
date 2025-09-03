@@ -11,6 +11,7 @@ namespace Chainly.Application.Dtos
         public string FullName { get; set; }
         public string Email { get; set; }
         public string Password { get; set; }
+        public string ConfirmPassword { get; set; }
         public string CompanyName { get; set; }
         public decimal LocationLatitude { get; set; }
         public decimal LocationLongitude { get; set; }

@@ -10,16 +10,10 @@
   <component name="ChangeListManager">
     <list default="true" id="1f6f7ecf-157a-4d27-aeb5-f549e6b38ae8" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Chainly/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Chainly/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Chainly.Application/DTOs/Auth/RegisterDto.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly.Application/DTOs/Auth/RegisterDto.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Chainly.Application/DTOs/SupplierDto.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly.Application/DTOs/SupplierDto.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Chainly.Application/DTOs/SupplierImportDto.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly.Application/DTOs/SupplierImportDto.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Chainly.Application/Services/Implementation/AuthService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly.Application/Services/Implementation/AuthService.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Chainly.Application/Services/Implementation/SupplierImportService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly.Application/Services/Implementation/SupplierImportService.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Chainly.Application/Services/Implementation/SupplierService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly.Application/Services/Implementation/SupplierService.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Chainly.Domain/Models/Company.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly.Domain/Models/Company.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Chainly.Domain/Models/Supplier.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly.Domain/Models/Supplier.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Chainly.Infrastructure/Migrations/AppDbContextModelSnapshot.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly.Infrastructure/Migrations/AppDbContextModelSnapshot.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Chainly/Helpers/DBIntializer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly/Helpers/DBIntializer.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Chainly.Application/Services/Implementation/UserService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly.Application/Services/Implementation/UserService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Chainly.Application/Services/Interfaces/IUserService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly.Application/Services/Interfaces/IUserService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Chainly.Domain/Constants/Modules.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Chainly/Controllers/UserController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly/Controllers/UserController.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -65,6 +59,9 @@
     <setting file="file://$PROJECT_DIR$/Chainly.Application/DTOs/Role/RoleDto.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly.Application/DTOs/Role/RolePermissionsDto.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly.Application/DTOs/Role/RoleUpdatePermissionsDto.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Chainly.Application/DTOs/User/UserCreateDto.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Chainly.Application/DTOs/User/UserDto.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Chainly.Application/DTOs/User/UserUpdateDto.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="mock://C:/Users/Maryam/RiderProjects/Chainly/Chainly.Application/Services/Implementation/AuthService.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/Users/Maryam/RiderProjects/Chainly/Chainly.Application/Services/Implementation/AuthService.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly.Application/Services/Implementation/RoleService.cs" root0="FORCE_HIGHLIGHTING" />
@@ -72,6 +69,7 @@
     <setting file="file://$PROJECT_DIR$/Chainly.Domain/Models/Order.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly.Domain/Models/OrderTracking.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly.Domain/Models/Role.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/Maryam/RiderProjects/Chainly/Chainly.Infrastructure/Migrations/AppDbContextModelSnapshot.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/Users/Maryam/RiderProjects/Chainly/Chainly.Infrastructure/Migrations/AppDbContextModelSnapshot.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly/Controllers/BaseController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="mock://C:/Users/Maryam/RiderProjects/Chainly/Chainly/Controllers/SuppliersController.cs" root0="SKIP_HIGHLIGHTING" />
@@ -190,7 +188,7 @@
       <workItem from="1756696336156" duration="2224000" />
       <workItem from="1756746277722" duration="4385000" />
       <workItem from="1756841672554" duration="1364000" />
-      <workItem from="1756851339323" duration="16796000" />
+      <workItem from="1756851339323" duration="20258000" />
     </task>
     <task id="LOCAL-00001" summary="refactor: extract common logic to BaseController">
       <option name="closed" value="true" />
@@ -230,7 +228,9 @@
     <MESSAGE value="refactor: remove `ProductType` from `Supplier` and related logic" />
     <MESSAGE value="feat: remove ProductType property from Supplier entity and related references" />
     <MESSAGE value="refactor: remove `ProductType` from `Supplier` model and update related services" />
-    <option name="LAST_COMMIT_MESSAGE" value="refactor: remove `ProductType` from `Supplier` model and update related services" />
+    <MESSAGE value="feat: update location fields to decimal and implement transactional registration logic" />
+    <MESSAGE value="feat: update location fields to decimal and improve validation logic" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: update location fields to decimal and improve validation logic" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

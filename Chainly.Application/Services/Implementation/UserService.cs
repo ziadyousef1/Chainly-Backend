@@ -1,4 +1,6 @@
+using Chainly.Application.DTOs.User;
 using Chainly.Application.Interfaces;
+using Chainly.Data;
 using Chainly.Domain.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -9,53 +11,170 @@ namespace Chainly.Application.Services
     public class UserService : IUserService
     {
         private readonly UserManager<User> _userManager;
-        private readonly RoleManager<Role> _roleManager;
+        private readonly AppDbContext _context;
 
-        public UserService(UserManager<User> userManager, RoleManager<Role> roleManager)
+        public UserService(UserManager<User> userManager, AppDbContext context)
         {
             _userManager = userManager;
-            _roleManager = roleManager;
+            _context = context;
         }
 
-        public async Task<IActionResult> GetAllUsersAsync()
+        public async Task<IActionResult> GetAllUsersAsync(int companyId)
         {
-            var users = await _userManager.Users
-                .Select(u => new
-                {
-                    u.Id,
-                    u.UserName,
-                    u.Email,
-                    u.FullName
-                })
+            var users = await _context.Users
+                .Where(u => u.CompanyId == companyId)
                 .ToListAsync();
 
-            var usersWithRoles = new List<object>();
+            var userDtos = new List<UserDto>();
+
             foreach (var user in users)
             {
-                var userEntity = await _userManager.FindByIdAsync(user.Id.ToString());
-                if (userEntity != null)
+                var roles = await _userManager.GetRolesAsync(user);
+                userDtos.Add(new UserDto
                 {
-                    var roles = await _roleManager.Roles
-                        .Where(r => r.CompanyId == userEntity.CompanyId)
-                        .Select(r => r.Name)
-                        .ToListAsync();
+                    Id = user.Id,
+                    FullName = user.FullName,
+                    Email = user.Email,
+                    Roles = roles.ToList()
+                });
+            }
 
-                    var userRoles = await _userManager.GetRolesAsync(userEntity);
+            return new OkObjectResult(userDtos);
+        }
 
-                    var filteredUserRoles = userRoles.Intersect(roles);
+        public async Task<IActionResult> CreateUserAsync(UserCreateDto dto, int companyId)
+        {
+            if (dto.Password != dto.ConfirmPassword)
+                return new BadRequestObjectResult("Password and confirmation do not match");
 
-                    usersWithRoles.Add(new
+            var existingUser = await _userManager.FindByEmailAsync(dto.Email);
+            if (existingUser != null)
+                return new BadRequestObjectResult("Email already exists");
+
+            var user = new User
+            {
+                FullName = dto.FullName,
+                Email = dto.Email,
+                UserName = dto.Email,
+                CompanyId = companyId,
+            };
+
+            var result = await _userManager.CreateAsync(user, dto.Password);
+            if (!result.Succeeded)
+                return new BadRequestObjectResult(result.Errors);
+
+            if (dto.Roles != null && dto.Roles.Any())
+            {
+                foreach (var roleName in dto.Roles)
+                {
+                    var role = await _context.Roles
+                        .FirstOrDefaultAsync(r => r.Name == roleName && r.CompanyId == companyId);
+
+                    if (role != null)
                     {
-                        user.Id,
-                        user.UserName,
-                        user.Email,
-                        user.FullName,
-                        Roles = filteredUserRoles
-                    });
+                        _context.UserRoles.Add(new IdentityUserRole<int>
+                        {
+                            UserId = user.Id,
+                            RoleId = role.Id
+                        });
+                    }
                 }
             }
 
-            return new OkObjectResult(usersWithRoles);
+            return new OkObjectResult(new { Message = "User created successfully", UserId = user.Id });
+        }
+
+        public async Task<IActionResult> UpdateUserAsync(int id, UserUpdateDto dto, int companyId)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.CompanyId == companyId);
+            if (user == null)
+                return new NotFoundObjectResult("User not found");
+
+            user.FullName = dto.FullName ?? user.FullName;
+
+            if (!string.IsNullOrEmpty(dto.Email))
+            {
+                var existingUser = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Email == dto.Email && u.Id != user.Id);
+                if (existingUser != null)
+                    return new BadRequestObjectResult("Email is already taken by another user");
+
+                user.Email = dto.Email;
+                user.UserName = dto.Email;
+            }
+
+            if (!string.IsNullOrEmpty(dto.Password))
+            {
+                if (string.IsNullOrEmpty(dto.ConfirmPassword) || dto.Password != dto.ConfirmPassword)
+                    return new BadRequestObjectResult("Password and confirmation do not match");
+
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var result = await _userManager.ResetPasswordAsync(user, token, dto.Password);
+                if (!result.Succeeded)
+                    return new BadRequestObjectResult(result.Errors);
+            }
+
+            if (dto.Roles != null)
+            {
+                var validRoles = await _context.Roles
+                    .Where(r => r.CompanyId == companyId && dto.Roles.Contains(r.Name))
+                    .ToListAsync();
+
+                var currentUserRoles = await _context.UserRoles
+                    .Where(ur => ur.UserId == user.Id)
+                    .ToListAsync();
+
+                var rolesToRemove = currentUserRoles
+                    .Where(ur => validRoles.All(vr => vr.Id != ur.RoleId))
+                    .ToList();
+
+                if (rolesToRemove.Any())
+                    _context.UserRoles.RemoveRange(rolesToRemove);
+
+                var rolesToAdd = validRoles
+                    .Where(vr => currentUserRoles.All(ur => ur.RoleId != vr.Id))
+                    .Select(vr => new IdentityUserRole<int>
+                    {
+                        UserId = user.Id,
+                        RoleId = vr.Id
+                    })
+                    .ToList();
+
+                if (rolesToAdd.Any())
+                    await _context.UserRoles.AddRangeAsync(rolesToAdd);
+            }
+
+            await _context.SaveChangesAsync();
+            return new OkObjectResult("User updated successfully");
+        }
+
+        public async Task<IActionResult> DeleteUserAsync(int id, int companyId)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.CompanyId == companyId);
+            if (user == null)
+                return new NotFoundObjectResult("User not found");
+
+            await _userManager.DeleteAsync(user);
+            return new OkObjectResult("User deleted successfully");
+        }
+
+        public async Task<IActionResult> GetUserByIdAsync(int id, int companyId)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.CompanyId == companyId);
+            if (user == null)
+                return new NotFoundObjectResult("User not found");
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            var userDto = new UserDto
+            {
+                Id = user.Id,
+                FullName = user.FullName,
+                Email = user.Email,
+                Roles = roles.ToList()
+            };
+
+            return new OkObjectResult(userDto);
         }
 
         public async Task<IActionResult> GetUserRolesAsync(int id)
@@ -64,43 +183,43 @@ namespace Chainly.Application.Services
             if (user == null)
                 return new NotFoundObjectResult("User not found");
 
-            var allRoles = await _roleManager.Roles
-                .Where(r => r.CompanyId == user.CompanyId)
-                .ToListAsync();
-            var userRoles = await _userManager.GetRolesAsync(user);
-
-            var filteredUserRoles = userRoles.Intersect(allRoles.Select(r => r.Name));
-
-            var result = allRoles.Select(r => new
-            {
-                RoleName = r.Name,
-                IsSelected = filteredUserRoles.Contains(r.Name ?? "")
-            });
-
-            return new OkObjectResult(result);
+            var roles = await _userManager.GetRolesAsync(user);
+            return new OkObjectResult(roles);
         }
 
         public async Task<IActionResult> UpdateUserRolesAsync(int id, List<string> rolesToAssign)
         {
-            var user = await _userManager.FindByIdAsync(id.ToString());
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
             if (user == null)
                 return new NotFoundObjectResult("User not found");
 
-            var validRoles = await _roleManager.Roles
-                .Where(r => r.CompanyId == user.CompanyId)
-                .Select(r => r.Name)
+            var validRoles = await _context.Roles
+                .Where(r => r.CompanyId == user.CompanyId && rolesToAssign.Contains(r.Name))
                 .ToListAsync();
 
-            var filteredRolesToAssign = rolesToAssign.Intersect(validRoles).ToList();
+            var currentUserRoles = await _context.UserRoles
+                .Where(ur => ur.UserId == user.Id)
+                .ToListAsync();
 
-            var currentRoles = await _userManager.GetRolesAsync(user);
-            var rolesToRemove = currentRoles.Except(filteredRolesToAssign);
-            await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+            var rolesToRemove = currentUserRoles
+                .Where(ur => !validRoles.Any(vr => vr.Id == ur.RoleId))
+                .ToList();
+            if (rolesToRemove.Any())
+                _context.UserRoles.RemoveRange(rolesToRemove);
 
-            var rolesToAdd = filteredRolesToAssign.Except(currentRoles);
-            await _userManager.AddToRolesAsync(user, rolesToAdd);
+            var rolesToAdd = validRoles
+                .Where(vr => !currentUserRoles.Any(ur => ur.RoleId == vr.Id))
+                .Select(vr => new IdentityUserRole<int>
+                {
+                    UserId = user.Id,
+                    RoleId = vr.Id
+                })
+                .ToList();
+            if (rolesToAdd.Any())
+                await _context.UserRoles.AddRangeAsync(rolesToAdd);
 
-            return new NoContentResult();
+            await _context.SaveChangesAsync();
+            return new OkObjectResult("User roles updated successfully");
         }
     }
 }

@@ -40,6 +40,9 @@ namespace Chainly.Application.Services
 
         public async Task<IActionResult> RegisterAsync(RegisterDto model)
         {
+            if (model.Password != model.ConfirmPassword)
+                return new BadRequestObjectResult("Password and confirmation do not match");
+
             await using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
