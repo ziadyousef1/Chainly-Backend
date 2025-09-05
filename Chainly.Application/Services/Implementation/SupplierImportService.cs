@@ -47,27 +47,27 @@ namespace Chainly.Application.Services.Implementation
 
         public async Task<int> ImportSuppliersAsync(IEnumerable<SupplierImportDto> suppliers, int? companyId = null)
         {
-            var importedCount = 0;
             using var transaction = await _context.Database.BeginTransactionAsync();
 
-            foreach (var supplierDto in suppliers)
-            {
-                var existingSupplier = await _context.Suppliers
-                    .FirstOrDefaultAsync(s => s.Name.ToLower() == supplierDto.Name.ToLower());
+            var oldSuppliers = _context.Suppliers
+                .Where(s => !companyId.HasValue || s.CompanyId == companyId);
 
-                if (existingSupplier == null)
-                {
-                    var supplier = MapToSupplier(supplierDto, companyId);
-                    _context.Suppliers.Add(supplier);
-                    importedCount++;
-                }
-            }
-
+            _context.Suppliers.RemoveRange(oldSuppliers);
             await _context.SaveChangesAsync();
+
+            
+            var newSuppliers = suppliers
+                .Where(s => !string.IsNullOrWhiteSpace(s.Name))
+                .Select(dto => MapToSupplier(dto, companyId))
+                .ToList();
+
+            _context.Suppliers.AddRange(newSuppliers);
+
+            var importedCount = await _context.SaveChangesAsync();
             await transaction.CommitAsync();
+
             return importedCount;
         }
-
         public Task<bool> ValidateSupplierDataAsync(IEnumerable<SupplierImportDto> suppliers)
         {
             var errors = new List<string>();
@@ -157,22 +157,23 @@ namespace Chainly.Application.Services.Implementation
 
         public async Task<int> ImportMaterialsAsync(IEnumerable<MaterialImportDto> materials)
         {
-            var importedCount = 0;
+            using var transaction = await _context.Database.BeginTransactionAsync();
 
-            foreach (var materialDto in materials)
-            {
-                var existingMaterial = await _context.Materials
-                    .FirstOrDefaultAsync(m => m.Name.ToLower() == materialDto.Name.ToLower());
-
-                if (existingMaterial == null)
-                {
-                    var material = MapToMaterial(materialDto);
-                    _context.Materials.Add(material);
-                    importedCount++;
-                }
-            }
-
+            
+            _context.Materials.RemoveRange(_context.Materials);
             await _context.SaveChangesAsync();
+
+           
+            var newMaterials = materials
+                .Where(m => !string.IsNullOrWhiteSpace(m.Name))
+                .Select(MapToMaterial)
+                .ToList();
+
+            _context.Materials.AddRange(newMaterials);
+
+            var importedCount = await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
             return importedCount;
         }
 
@@ -226,31 +227,37 @@ namespace Chainly.Application.Services.Implementation
 
         public async Task<int> ImportSupplierMaterialsAsync(IEnumerable<SupplierMaterialImportDto> supplierMaterials)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            
+            _context.SupplierMaterials.RemoveRange(_context.SupplierMaterials);
+            await _context.SaveChangesAsync();
+
+            
             var importedCount = 0;
 
             foreach (var smDto in supplierMaterials)
             {
-                var supplier = await _context.Suppliers.FirstOrDefaultAsync(s => s.Name.ToLower() == smDto.SupplierName.ToLower());
-                var material = await _context.Materials.FirstOrDefaultAsync(m => m.Name.ToLower() == smDto.MaterialName.ToLower());
+                var supplier = await _context.Suppliers
+                    .FirstOrDefaultAsync(s => s.Name.ToLower() == smDto.SupplierName.ToLower());
+
+                var material = await _context.Materials
+                    .FirstOrDefaultAsync(m => m.Name.ToLower() == smDto.MaterialName.ToLower());
 
                 if (supplier != null && material != null)
                 {
-                    var exists = await _context.SupplierMaterials
-                        .AnyAsync(sm => sm.SupplierId == supplier.Id && sm.MaterialId == material.Id);
-
-                    if (!exists)
+                    _context.SupplierMaterials.Add(new SupplierMaterial
                     {
-                        _context.SupplierMaterials.Add(new SupplierMaterial
-                        {
-                            SupplierId = supplier.Id,
-                            MaterialId = material.Id
-                        });
-                        importedCount++;
-                    }
+                        SupplierId = supplier.Id,
+                        MaterialId = material.Id
+                    });
+                    importedCount++;
                 }
             }
 
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
             return importedCount;
         }
 
