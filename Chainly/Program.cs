@@ -11,11 +11,17 @@ if (builder.Environment.IsDevelopment())
         .AddUserSecrets<Program>(optional: true);
 }
 
+<<<<<<< HEAD
 builder.Services.Configure<AzureOpenAISettings>(builder.Configuration.GetSection("AzureOpenAISettings"));
+=======
+
+>>>>>>> d8050dac5ca57f28c64379132acf4348a15a4d7a
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("ProductionConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString(builder.Environment.IsDevelopment()
+        ? "DefaultConnection"
+        : "ProductionConnection")));
 
 var emailconfig = builder.Configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
 builder.Services.AddSingleton(emailconfig);
@@ -65,9 +71,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.MapOpenApi();
-app.MapScalarApiReference(options =>
-{
-    options.Theme = ScalarTheme.Mars;
-});
+app.MapScalarApiReference(options => { options.Theme = ScalarTheme.Mars; });
 
 app.Run();

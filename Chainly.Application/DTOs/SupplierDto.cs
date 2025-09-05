@@ -10,12 +10,11 @@ namespace Chainly.Application.DTOs
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
-        public string Latitude { get; set; }
-        public string Longitude { get; set; }
+        public decimal Latitude { get; set; }
+        public decimal Longitude { get; set; }
         public int? CompanyId { get; set; }
-        public double Distance { get; set; }
+        public decimal Distance { get; set; }
         public string FacilityType { get; set; } = string.Empty;
-        public string ProductType { get; set; } = string.Empty;
         public string Sector { get; set; } = string.Empty;
     }
 }

@@ -4,7 +4,7 @@ namespace Chainly.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthenticationController : ControllerBase
+    public class AuthenticationController : BaseController
     {
         private readonly IAuthService _authService;
 

@@ -30,13 +30,11 @@ namespace Chainly.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("LocationLatitude")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<decimal>("LocationLatitude")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("LocationLongitude")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<decimal>("LocationLongitude")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Logo")
                         .HasColumnType("nvarchar(max)");
@@ -267,19 +265,13 @@ namespace Chainly.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("LocationLatitude")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<decimal>("LocationLatitude")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("LocationLongitude")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<decimal>("LocationLongitude")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ProductType")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 

@@ -9,6 +9,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1f6f7ecf-157a-4d27-aeb5-f549e6b38ae8" name="Changes" comment="">
+<<<<<<< HEAD
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Chainly/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Chainly/.idea/dataSources.local.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Chainly/.idea/dataSources.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Chainly/.idea/dataSources.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Chainly/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Chainly/.idea/workspace.xml" afterDir="false" />
@@ -17,6 +18,13 @@
       <change beforePath="$PROJECT_DIR$/Chainly/GlobalUsings.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly/GlobalUsings.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Chainly/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly/Program.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Chainly/appsettings.json" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly/appsettings.json" afterDir="false" />
+=======
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.Chainly/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Chainly/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Chainly.Application/Services/Implementation/UserService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly.Application/Services/Implementation/UserService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Chainly.Application/Services/Interfaces/IUserService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly.Application/Services/Interfaces/IUserService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Chainly.Domain/Constants/Modules.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Chainly/Controllers/UserController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Chainly/Controllers/UserController.cs" afterDir="false" />
+>>>>>>> d8050dac5ca57f28c64379132acf4348a15a4d7a
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,8 +52,13 @@
 }</component>
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
+<<<<<<< HEAD
     &quot;url&quot;: &quot;https://github.com/SCM-DevIgnite/Chainly.git&quot;,
     &quot;accountId&quot;: &quot;91f8f5f1-6485-4fd4-abe9-ae462e898192&quot;
+=======
+    &quot;url&quot;: &quot;https://github.com/SCM-DevIgnite/Chainly-Backend.git&quot;,
+    &quot;accountId&quot;: &quot;2ec3bd30-b371-4cf3-85b9-68e88f8f9ae8&quot;
+>>>>>>> d8050dac5ca57f28c64379132acf4348a15a4d7a
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
@@ -56,8 +69,16 @@
     <setting file="mock:///Dummy.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/ILViewer/20b73ffb281a474e930013f645db065213c00/03/4652c6d9/02000018pdb13.il" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/1622b8f95d27187bc1fb39bac49bd64e928773df4fda6fcf6271680be54a2/UserManager.cs" root0="SKIP_HIGHLIGHTING" />
+<<<<<<< HEAD
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/64c814325abc73fd1c17fa9932826d149f5e071fc39f6b3238b1b194e86ab2c/DbConnectionStringBuilder.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/bd1d5c50194fea68ff3559c160230b0ab50f5acf4ce3061bffd6d62958e2182/ExceptionDispatchInfo.cs" root0="FORCE_HIGHLIGHTING" />
+=======
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/4c2f36bb24b4a6a0bab2298023c8c8e87198654bd5240582784f93bfaa1d04c/RoleManager.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/8e25cce28490c87faaf15522967e96692c1829b521f6b7a4fc8bde524eec/IdentityRole.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/9c0b4e6d35a9e7121bc6d95941775d86a1829678862197451b3fa98c8582f/MailTransport.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/9fc14c9d50268c83871a1e44d9a3301092ce593c973f486af9d6d56482cff013/IdentityUserRole.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/f97a7aacf07f4dcfb4b5abaf07ce590918930/_065bf/ClaimTypes.cs" root0="FORCE_HIGHLIGHTING" />
+>>>>>>> d8050dac5ca57f28c64379132acf4348a15a4d7a
     <setting file="file://$USER_HOME$/AppData/Roaming/Microsoft/UserSecrets/7f69db6f-fb7e-443d-96b3-6baac791fa89/secrets.json" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$USER_HOME$/AppData/Roaming/Microsoft/UserSecrets/99c0c631-136b-43ec-9418-fde1babd3b61/secrets.json" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly.Application/DTOs/Role/PermissionDto.cs" root0="FORCE_HIGHLIGHTING" />
@@ -65,11 +86,20 @@
     <setting file="file://$PROJECT_DIR$/Chainly.Application/DTOs/Role/RoleDto.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly.Application/DTOs/Role/RolePermissionsDto.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly.Application/DTOs/Role/RoleUpdatePermissionsDto.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Chainly.Application/DTOs/User/UserCreateDto.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Chainly.Application/DTOs/User/UserDto.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Chainly.Application/DTOs/User/UserUpdateDto.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/Maryam/RiderProjects/Chainly/Chainly.Application/Services/Implementation/AuthService.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/Maryam/RiderProjects/Chainly/Chainly.Application/Services/Implementation/AuthService.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly.Application/Services/Implementation/RoleService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly.Application/Services/Interfaces/IRoleService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly.Domain/Models/Order.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly.Domain/Models/OrderTracking.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly.Domain/Models/Role.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/Maryam/RiderProjects/Chainly/Chainly.Infrastructure/Migrations/AppDbContextModelSnapshot.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/Maryam/RiderProjects/Chainly/Chainly.Infrastructure/Migrations/AppDbContextModelSnapshot.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Chainly/Controllers/BaseController.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/Maryam/RiderProjects/Chainly/Chainly/Controllers/SuppliersController.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly/Filters/PermissionAuthorizationHandler.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly/Filters/PermissionPolicyProvider.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Chainly/Filters/PermissionRequirement.cs" root0="FORCE_HIGHLIGHTING" />
@@ -181,7 +211,22 @@
       <workItem from="1756671013571" duration="3545000" />
       <workItem from="1756695847136" duration="444000" />
       <workItem from="1756696336156" duration="2224000" />
+<<<<<<< HEAD
+=======
+      <workItem from="1756746277722" duration="4385000" />
+      <workItem from="1756841672554" duration="1364000" />
+      <workItem from="1756851339323" duration="20258000" />
+>>>>>>> d8050dac5ca57f28c64379132acf4348a15a4d7a
     </task>
+    <task id="LOCAL-00001" summary="refactor: extract common logic to BaseController">
+      <option name="closed" value="true" />
+      <created>1756853853378</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1756853853378</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -202,7 +247,18 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
-    <option name="LAST_COMMIT_MESSAGE" value="" />
+    <MESSAGE value="feat: integrate Scalar.AspNetCore and update API configuration" />
+    <MESSAGE value="refactor: create BaseController and refactor controllers to inherit it" />
+    <MESSAGE value="refactor: introduce BaseController and update controllers to inherit it" />
+    <MESSAGE value="refactor: introduce BaseController to centralize `GetCompanyId` logic and update controllers" />
+    <MESSAGE value="refactor: introduce BaseController and update controllers to inherit from it" />
+    <MESSAGE value="refactor: extract common logic to BaseController" />
+    <MESSAGE value="refactor: remove `ProductType` from `Supplier` and related logic" />
+    <MESSAGE value="feat: remove ProductType property from Supplier entity and related references" />
+    <MESSAGE value="refactor: remove `ProductType` from `Supplier` model and update related services" />
+    <MESSAGE value="feat: update location fields to decimal and implement transactional registration logic" />
+    <MESSAGE value="feat: update location fields to decimal and improve validation logic" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: update location fields to decimal and improve validation logic" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -210,7 +266,14 @@
         <line-breakpoint type="DotNet Breakpoints">
           <url>file://$PROJECT_DIR$/Chainly.Application/Services/Implementation/SupplierImportService.cs</url>
           <line>20</line>
-          <properties documentPath="D:\SCM\Chainly\Chainly.Application\Services\Implementation\SupplierImportService.cs" containingFunctionPresentation="Method 'ReadSuppliersFromExcelAsync'" />
+          <properties documentPath="D:\SCM\Chainly\Chainly.Application\Services\Implementation\SupplierImportService.cs" containingFunctionPresentation="Method 'ReadSuppliersFromExcelAsync'">
+            <startOffsets>
+              <option value="613" />
+            </startOffsets>
+            <endOffsets>
+              <option value="614" />
+            </endOffsets>
+          </properties>
           <option name="timeStamp" value="9" />
         </line-breakpoint>
         <line-breakpoint type="DotNet Breakpoints">

@@ -40,70 +40,84 @@ namespace Chainly.Application.Services
 
         public async Task<IActionResult> RegisterAsync(RegisterDto model)
         {
-            var company = await _context.Companies
-                .FirstOrDefaultAsync(c => c.Name.ToLower() == model.CompanyName.ToLower());
+            if (model.Password != model.ConfirmPassword)
+                return new BadRequestObjectResult("Password and confirmation do not match");
 
-            if (company != null)
-                return new BadRequestObjectResult(new { Message = "A company with this name already exists." });
-
-            company = new Company
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                Name = model.CompanyName,
-                LocationLatitude = model.LocationLatitude,
-                LocationLongitude = model.LocationLongitude,
-                Logo = null
-            };
-            _context.Companies.Add(company);
-            await _context.SaveChangesAsync();
+                var company = await _context.Companies
+                    .FirstOrDefaultAsync(c => c.Name.ToLower() == model.CompanyName.ToLower());
 
-            var user = new User
-            {
-                UserName = model.Email,
-                Email = model.Email,
-                FullName = model.FullName,
-                CompanyId = company.Id
-            };
+                if (company != null)
+                    return new BadRequestObjectResult(new { Message = "A company with this name already exists." });
 
-            var result = await _userManager.CreateAsync(user, model.Password);
+                company = new Company
+                {
+                    Name = model.CompanyName,
+                    LocationLatitude = model.LocationLatitude,
+                    LocationLongitude = model.LocationLongitude,
+                    Logo = null
+                };
+                _context.Companies.Add(company);
+                await _context.SaveChangesAsync();
 
-            if (!result.Succeeded)
-                return new BadRequestObjectResult(result.Errors);
+                var user = new User
+                {
+                    UserName = model.Email,
+                    Email = model.Email,
+                    FullName = model.FullName,
+                    CompanyId = company.Id
+                };
 
-            var role = new Role { Name = "Manager", CompanyId = company.Id, NormalizedName = "MANAGER"};
-            _context.Roles.Add(role);
-            await _context.SaveChangesAsync();
+                var result = await _userManager.CreateAsync(user, model.Password);
 
-            var allPermissions = Permissions.GenerateAllPermissions();
-            foreach (var perm in allPermissions)
-            {
-                await _roleManager.AddClaimAsync(role, new Claim(CustomClaimTypes.Permission, perm));
+                if (!result.Succeeded)
+                    return new BadRequestObjectResult(result.Errors);
+
+                var role = new Role { Name = "Manager", CompanyId = company.Id, NormalizedName = "MANAGER" };
+                _context.Roles.Add(role);
+                await _context.SaveChangesAsync();
+
+                var allPermissions = Permissions.GenerateAllPermissions();
+                foreach (var perm in allPermissions.SelectMany(kvp => kvp.Value))
+                {
+                    await _roleManager.AddClaimAsync(role, new Claim(CustomClaimTypes.Permission, perm));
+                }
+
+
+                _context.UserRoles.Add(new IdentityUserRole<int>
+                {
+                    UserId = user.Id,
+                    RoleId = role.Id
+                });
+
+                await transaction.CommitAsync();
+
+                await ResendVerificationCodeAsync(user.Email);
+
+                return new OkObjectResult(new { Message = "User registered successfully" });
             }
-
-            _context.UserRoles.Add(new IdentityUserRole<int>
+            catch
             {
-                UserId = user.Id,
-                RoleId = role.Id
-            });
-
-            await _context.SaveChangesAsync();
-
-            await ResendVerificationCodeAsync(user.Email);
-
-            return new OkObjectResult(new
-                { Message = "User registered successfully", Role = role, Company = company.Name });
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<IActionResult> LoginAsync(LoginDto model)
         {
             var user = await _userManager.FindByEmailAsync(model.Email);
 
-            if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
-            {
-                var token = await GenerateJwtToken(user);
-                return new OkObjectResult(new { Token = token });
-            }
+            if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
+                return new UnauthorizedObjectResult("Invalid login attempt");
 
-            return new UnauthorizedObjectResult("Invalid login attempt");
+            if (!await _userManager.IsEmailConfirmedAsync(user))
+                return new UnauthorizedObjectResult(
+                    "Email is not confirmed. Please verify your email before logging in.");
+
+            var token = await GenerateJwtToken(user);
+            return new OkObjectResult(new { Token = token });
         }
 
         public async Task<IActionResult> ForgotPasswordAsync(string email)
@@ -147,15 +161,15 @@ namespace Chainly.Application.Services
         {
             var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
-                return new NotFoundObjectResult("User Not Found !");
+                return new NotFoundObjectResult("User Not Found!");
 
             if (user.VerificationCode == code && user.ExpirationCode > DateTime.UtcNow)
             {
-                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
                 user.VerificationCode = null;
                 user.ExpirationCode = null;
+                user.EmailConfirmed = true;
                 await _userManager.UpdateAsync(user);
-                return new OkObjectResult(new { Message = "OTP Verified Successfully !", Token = token });
+                return new OkObjectResult(new { Message = "OTP Verified Successfully!" });
             }
 
             return new BadRequestObjectResult("Invalid OR Expired OTP.");

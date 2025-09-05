@@ -14,11 +14,14 @@ namespace Chainly.Application.Services.Implementation
     public class SupplierService : ISupplierService
     {
         private readonly AppDbContext _context;
+
         public SupplierService(AppDbContext context)
         {
             _context = context;
         }
-        public async Task<PagedResult<SupplierDto>> GetSuppliersAsync(string userId, int? pageNumber = null, int? pageSize = null)
+
+        public async Task<PagedResult<SupplierDto>> GetSuppliersAsync(string userId, int? pageNumber = null,
+            int? pageSize = null)
         {
             var user = await _context.Users
                 .Include(u => u.Company)
@@ -35,7 +38,6 @@ namespace Chainly.Application.Services.Implementation
 
             var company = user.Company;
 
-            
             var suppliers = await _context.Suppliers
                 .Where(s => s.CompanyId == null || s.CompanyId == company.Id)
                 .Select(s => new SupplierDto
@@ -46,52 +48,35 @@ namespace Chainly.Application.Services.Implementation
                     Longitude = s.LocationLongitude,
                     CompanyId = s.CompanyId,
                     FacilityType = s.FacilityType,
-                    ProductType = s.ProductType,
-                    Sector = s.Sector
-                }).ToListAsync();
+                    Sector = s.Sector,
+                    Distance = CalculateDistance(company.LocationLatitude, company.LocationLongitude, s.LocationLatitude, s.LocationLongitude)
+                })
+                .OrderBy(s => s.Distance)
+                .ToListAsync();
 
-            
-            foreach (var supplier in suppliers)
-            {
-                if (TryParseCoords(company.LocationLatitude, company.LocationLongitude,
-                                   supplier.Latitude, supplier.Longitude,
-                                   out double cLat, out double cLon, out double sLat, out double sLon))
-                {
-                    supplier.Distance = CalculateDistance(cLat, cLon, sLat, sLon);
-                }
-                else
-                {
-                    supplier.Distance = double.MaxValue;
-                }
-            }
-
-            var sortedSuppliers = suppliers.OrderBy(s => s.Distance);
 
             // Paging
             if (pageNumber.HasValue && pageSize.HasValue && pageNumber > 0 && pageSize > 0)
             {
-                var totalCount = sortedSuppliers.Count();
-                var items = sortedSuppliers
-                    .Skip(((int)pageNumber - 1) * (int)pageSize)
-                    .Take((int)pageSize)
-                    .ToList();
+                var skip = (pageNumber.Value - 1) * pageSize.Value;
+                var pagedItems = suppliers.Skip(skip).Take(pageSize.Value).ToList();
 
                 return new PagedResult<SupplierDto>
                 {
-                    Items = items,
-                    TotalCount = totalCount,
+                    Items = pagedItems,
+                    TotalCount = suppliers.Count,
                     PageNumber = pageNumber.Value,
                     PageSize = pageSize.Value
                 };
             }
 
+
             return new PagedResult<SupplierDto>
             {
-                Items = sortedSuppliers.ToList(),
-                TotalCount = sortedSuppliers.Count()
+                Items = suppliers,
+                TotalCount = suppliers.Count
             };
         }
-
 
         public async Task<SupplierDto?> CreateSupplierAsync(SupplierDto dto, int companyId)
         {
@@ -105,20 +90,17 @@ namespace Chainly.Application.Services.Implementation
                 LocationLongitude = dto.Longitude,
                 CompanyId = companyId,
                 FacilityType = string.IsNullOrEmpty(dto.FacilityType) ? "Unknown" : dto.FacilityType,
-                ProductType = string.IsNullOrEmpty(dto.ProductType) ? "General" : dto.ProductType,
                 Sector = string.IsNullOrEmpty(dto.Sector) ? "Other" : dto.Sector
             };
 
             _context.Suppliers.Add(supplier);
             await _context.SaveChangesAsync();
 
-            double distance = 0;
-            if (TryParseCoords(company.LocationLatitude, company.LocationLongitude,
-                               supplier.LocationLatitude, supplier.LocationLongitude,
-                               out double cLat, out double cLon, out double sLat, out double sLon))
-            {
-                distance = CalculateDistance(cLat, cLon, sLat, sLon);
-            }
+            decimal distance = 0;
+
+            distance = CalculateDistance(company.LocationLatitude, company.LocationLongitude, supplier.LocationLatitude,
+                supplier.LocationLongitude);
+
 
             return new SupplierDto
             {
@@ -128,7 +110,6 @@ namespace Chainly.Application.Services.Implementation
                 Longitude = supplier.LocationLongitude,
                 CompanyId = supplier.CompanyId,
                 FacilityType = supplier.FacilityType,
-                ProductType = supplier.ProductType,
                 Sector = supplier.Sector,
                 Distance = distance
             };
@@ -143,7 +124,6 @@ namespace Chainly.Application.Services.Implementation
             supplier.LocationLatitude = dto.Latitude;
             supplier.LocationLongitude = dto.Longitude;
             supplier.FacilityType = string.IsNullOrEmpty(dto.FacilityType) ? supplier.FacilityType : dto.FacilityType;
-            supplier.ProductType = string.IsNullOrEmpty(dto.ProductType) ? supplier.ProductType : dto.ProductType;
             supplier.Sector = string.IsNullOrEmpty(dto.Sector) ? supplier.Sector : dto.Sector;
 
             _context.Suppliers.Update(supplier);
@@ -161,30 +141,19 @@ namespace Chainly.Application.Services.Implementation
             return true;
         }
 
-        private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
+        private decimal CalculateDistance(decimal lat1, decimal lon1, decimal lat2, decimal lon2)
         {
-            const double R = 6371; // km
-            var dLat = (lat2 - lat1) * Math.PI / 180.0;
-            var dLon = (lon2 - lon1) * Math.PI / 180.0;
+            const double R = 6371; // Radius of the earth in km
+            var dLat = (double)(lat2 - lat1) * Math.PI / 180.0;
+            var dLon = (double)(lon2 - lon1) * Math.PI / 180.0;
 
             var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
-                    Math.Cos(lat1 * Math.PI / 180.0) * Math.Cos(lat2 * Math.PI / 180.0) *
+                    Math.Cos((double)lat1 * Math.PI / 180.0) *
+                    Math.Cos((double)lat2 * Math.PI / 180.0) *
                     Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
 
             var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-            return R * c;
+            return (decimal)(R * c);
         }
-
-        private bool TryParseCoords(string? lat1, string? lon1, string? lat2, string? lon2,
-                              out double dLat1, out double dLon1, out double dLat2, out double dLon2)
-        {
-            bool ok1 = double.TryParse(lat1, out dLat1);
-            bool ok2 = double.TryParse(lon1, out dLon1);
-            bool ok3 = double.TryParse(lat2, out dLat2);
-            bool ok4 = double.TryParse(lon2, out dLon2);
-
-            return ok1 && ok2 && ok3 && ok4;
-        }
-
     }
 }
