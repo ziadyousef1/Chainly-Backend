@@ -30,11 +30,11 @@ namespace Chainly.Application.Services.Implementation
             {
                 var supplier = new SupplierImportDto
                 {
-                    Name = GetCellValue(worksheet, row, 3)?.ToString() ?? string.Empty,
-                    LocationLatitude = GetCellValue(worksheet, row, 7),
-                    LocationLongitude = GetCellValue(worksheet, row, 8),
-                    Sector = GetCellValue(worksheet, row, 9)?.ToString(),
-                    FacilityType = GetCellValue(worksheet, row, 14)?.ToString()
+                    Name = GetCellValue(worksheet, row, 2)?.ToString() ?? string.Empty,
+                    LocationLatitude = GetCellValue(worksheet, row, 4),
+                    LocationLongitude = GetCellValue(worksheet, row, 3),
+                    Sector = GetCellValue(worksheet, row, 5)?.ToString(),
+                    FacilityType = GetCellValue(worksheet, row, 6)?.ToString()
                 };
 
                 if (!string.IsNullOrWhiteSpace(supplier.Name))
@@ -144,8 +144,8 @@ namespace Chainly.Application.Services.Implementation
             {
                 var material = new MaterialImportDto
                 {
-                    Name = worksheet.Cells[row, 1].Text,
-                    EmissionValue = ParseDecimal(worksheet.Cells[row, 2].Text) ?? 0,
+                    Name = worksheet.Cells[row, 2].Text,
+                    EmissionValue = ParseDecimal(worksheet.Cells[row, 4].Text) ?? 0,
                     Unit = worksheet.Cells[row, 3].Text
                 };
 
