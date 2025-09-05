@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Chainly.Application.DTOs
+namespace Chainly.Application.DTOs.Suppliers
 {
     public class SupplierDto
     {

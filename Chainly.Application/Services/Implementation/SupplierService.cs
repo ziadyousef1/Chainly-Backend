@@ -1,4 +1,5 @@
 ﻿using Chainly.Application.DTOs;
+using Chainly.Application.DTOs.Suppliers;
 using Chainly.Application.Services.Interfaces;
 using Chainly.Data;
 using Chainly.Domain.Models;

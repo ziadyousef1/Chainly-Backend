@@ -1,7 +1,7 @@
-﻿using Chainly.Application.DTOs;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Chainly.Application.DTOs.Suppliers;
 
 namespace Chainly.Application.Services.Interfaces;
 

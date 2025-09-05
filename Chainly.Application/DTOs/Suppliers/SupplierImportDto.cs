@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Chainly.Application.DTOs
+namespace Chainly.Application.DTOs.Suppliers
 {
     public class SupplierImportDto
     {
@@ -15,6 +15,6 @@ namespace Chainly.Application.DTOs
         
         public string? FacilityType { get; set; }
         
-        public string? ProductType { get; set; }
+        
     }
 }

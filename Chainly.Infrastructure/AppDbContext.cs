@@ -13,6 +13,7 @@ namespace Chainly.Data
         public new DbSet<User> Users { get; set; }
         public DbSet<Report> Reports { get; set; }
         public DbSet<Supplier> Suppliers { get; set; }
+        public DbSet<Material> Materials { get; set; }
         public DbSet<SupplierMaterial> SupplierMaterials { get; set; }
         public DbSet<DefectiveProduct> DefectiveProducts { get; set; }
 

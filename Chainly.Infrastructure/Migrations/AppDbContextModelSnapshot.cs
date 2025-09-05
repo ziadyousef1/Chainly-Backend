@@ -97,7 +97,7 @@ namespace Chainly.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Material");
+                    b.ToTable("Materials");
                 });
 
             modelBuilder.Entity("Chainly.Domain.Models.Order", b =>
