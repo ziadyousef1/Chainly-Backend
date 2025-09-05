@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Chainly.Domain.Models;
+﻿namespace Chainly.Domain.Models;
 
 public class Order
 {

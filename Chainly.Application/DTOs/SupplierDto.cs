@@ -16,5 +16,7 @@ namespace Chainly.Application.DTOs
         public decimal Distance { get; set; }
         public string FacilityType { get; set; } = string.Empty;
         public string Sector { get; set; } = string.Empty;
+        public string DistanceUnit => "km";
+
     }
 }
