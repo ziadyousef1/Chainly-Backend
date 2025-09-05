@@ -20,3 +20,5 @@ global using Chainly.Application.DTOs;
 global using Chainly.Application.Services.Interfaces;
 global using Microsoft.Extensions.Options;
 global using Scalar.AspNetCore;
+
+global using Chainly.Application.DTOs;
