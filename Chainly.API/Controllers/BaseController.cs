@@ -1,4 +1,4 @@
-﻿namespace Chainly.Controllers;
+﻿namespace Chainly.API.Controllers;
 
 public class BaseController : ControllerBase
 {

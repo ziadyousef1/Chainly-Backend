@@ -1,29 +1,15 @@
 using Chainly.Application.Services.Implementation;
-
 var builder = WebApplication.CreateBuilder(args);
-
-if (builder.Environment.IsDevelopment())
-{
-    builder.Configuration
-        .SetBasePath(Directory.GetCurrentDirectory())
-        .AddJsonFile("appsettings.json", optional: false)
-        .AddUserSecrets<Program>(optional: true);
-}
-
-
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString(builder.Environment.IsDevelopment()
+    options.UseSqlServer(builder.Configuration.GetConnectionString(!builder.Environment.IsDevelopment()
         ? "DefaultConnection"
         : "ProductionConnection")));
 
 var emailconfig = builder.Configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
 builder.Services.AddSingleton(emailconfig);
-
 builder.Services.AddTransient<IEmailSender, EmailSender>();
-
-builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddApplicationServices();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();

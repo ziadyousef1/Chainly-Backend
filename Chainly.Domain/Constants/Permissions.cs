@@ -38,6 +38,7 @@ public static class Permissions
         public const string Create = "Suppliers.Create";
         public const string Update = "Suppliers.Update";
         public const string Delete = "Suppliers.Delete";
+        public const string Import = "Suppliers.Import";
     }
 
     public static class Companies
