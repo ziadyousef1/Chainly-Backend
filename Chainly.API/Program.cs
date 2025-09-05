@@ -1,19 +1,26 @@
+using Chainly.Application.Configurations;
 using Chainly.Application.Services.Implementation;
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<AzureOpenAISettings>(builder.Configuration.GetSection("AzureOpenAISettings"));
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString(!builder.Environment.IsDevelopment()
+    options.UseSqlServer(builder.Configuration.GetConnectionString(builder.Environment.IsDevelopment()
         ? "DefaultConnection"
         : "ProductionConnection")));
 
 var emailconfig = builder.Configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
 builder.Services.AddSingleton(emailconfig);
+
 builder.Services.AddTransient<IEmailSender, EmailSender>();
-builder.Services.AddApplicationServices();
+
+builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
-
 builder.Services.AddScoped<RoleManager<Role>>();
 
 builder.Services.Configure<SecurityStampValidatorOptions>(options => { options.ValidationInterval = TimeSpan.Zero; });
