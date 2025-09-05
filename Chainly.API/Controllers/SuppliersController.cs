@@ -116,5 +116,7 @@ public class SuppliersController(ISupplierService supplierService, ISupplierImpo
 
         var count = await supplierImportService.ImportSupplierMaterialsAsync(supplierMaterials);
         return Ok(new { Message = $"Linked {count} supplier-material relations successfully." });
+
+
     }
 }
