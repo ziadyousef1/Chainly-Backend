@@ -1,5 +1,5 @@
-using Chainly.Application.DTOs;
 using Chainly.Application.Services.Interfaces;
+using Chainly.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

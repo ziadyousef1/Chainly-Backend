@@ -1,7 +1,6 @@
-﻿
-
-
-namespace Chainly.Filters;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
+namespace Chainly.Infrastructure.Filters;
 
 public class PermissionPolicyProvider : IAuthorizationPolicyProvider
 {

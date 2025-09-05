@@ -1,6 +1,14 @@
-﻿namespace Chainly.Helpers
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using Chainly.Data;
+using Chainly.Domain.Constants;
+using Chainly.Domain.Models;
+
+namespace Chainly.Infrastructure.Helpers
 {
-    public static class DBIntializer
+    public static class DBInitializer
     {
         public static async Task SeedAsync(IServiceProvider serviceProvider)
         {
@@ -62,26 +70,6 @@
                 }
 
                 await roleManager.SeedAllPermissions(role);
-                await SeedSuppliersFromExcelAsync(scope.ServiceProvider);
-            }
-        }
-
-        public static async Task SeedSuppliersFromExcelAsync(IServiceProvider serviceProvider)
-        {
-            var supplierImportService = serviceProvider.GetService<ISupplierImportService>();
-            if (supplierImportService == null) return;
-
-            var excelFilePath = Path.Combine("suppliers.xlsx");
-
-            if (File.Exists(excelFilePath))
-            {
-                var suppliers = await supplierImportService.ReadSuppliersFromExcelAsync(excelFilePath);
-                var isValid = await supplierImportService.ValidateSupplierDataAsync(suppliers);
-
-                if (isValid)
-                {
-                    await supplierImportService.ImportSuppliersAsync(suppliers, companyId: 1);
-                }
             }
         }
 
