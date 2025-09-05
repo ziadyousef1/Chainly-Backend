@@ -3,19 +3,8 @@ using Chainly.Application.Services.Implementation;
 
 var builder = WebApplication.CreateBuilder(args);
 
-if (builder.Environment.IsDevelopment())
-{
-    builder.Configuration
-        .SetBasePath(Directory.GetCurrentDirectory())
-        .AddJsonFile("appsettings.json", optional: false)
-        .AddUserSecrets<Program>(optional: true);
-}
-
-<<<<<<< HEAD
 builder.Services.Configure<AzureOpenAISettings>(builder.Configuration.GetSection("AzureOpenAISettings"));
-=======
 
->>>>>>> d8050dac5ca57f28c64379132acf4348a15a4d7a
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options =>
