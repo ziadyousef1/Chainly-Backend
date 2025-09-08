@@ -48,13 +48,34 @@ namespace Chainly.Application.Services.Implementation
             return salesData;
         }
 
-        public async Task<List<SalesDataResponseDto>> GetLast30DaysForProductAsync(long productId)
+        public async Task<List<SalesDataResponseDto>> GetFilteredSalesDataAsync(SalesDataFilterDto filter)
         {
+            var query = _context.SalesData.AsQueryable();
 
-            var salesData = await _context.SalesData
-                .Where(s => s.ProductId == productId)
+            if (filter.CityId.HasValue)
+                query = query.Where(s => s.CityId == filter.CityId.Value);
+            
+            if (filter.StoreId.HasValue)
+                query = query.Where(s => s.StoreId == filter.StoreId.Value);
+                
+            if (filter.ManagementGroupId.HasValue)
+                query = query.Where(s => s.ManagementGroupId == filter.ManagementGroupId.Value);
+                
+            if (filter.FirstCategoryId.HasValue)
+                query = query.Where(s => s.FirstCategoryId == filter.FirstCategoryId.Value);
+                
+            if (filter.SecondCategoryId.HasValue)
+                query = query.Where(s => s.SecondCategoryId == filter.SecondCategoryId.Value);
+                
+            if (filter.ThirdCategoryId.HasValue)
+                query = query.Where(s => s.ThirdCategoryId == filter.ThirdCategoryId.Value);
+                
+            if (filter.ProductId.HasValue)
+                query = query.Where(s => s.ProductId == filter.ProductId.Value);
+
+            var salesData = await query
                 .OrderByDescending(s => s.Dt) 
-                .Take(30) 
+                .Take(filter.Limit ?? 30)
                 .Select(s => new SalesDataResponseDto
                 {
                     CityId = s.CityId,

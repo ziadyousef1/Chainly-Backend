@@ -47,21 +47,22 @@ public class SalesDataController : BaseController
     }
 
 
-    [HttpGet("product/{productId}/last30days")]
-    public async Task<ActionResult<List<SalesDataResponseDto>>> GetLast30DaysForProduct(long productId)
+
+    [HttpPost("filter")]
+    public async Task<ActionResult<List<SalesDataResponseDto>>> GetFilteredSalesData([FromBody] SalesDataFilterDto filter)
     {
         try
         {
-            if (productId <= 0)
+            if (filter == null)
             {
-                return BadRequest(new ServiceResponse("Invalid product ID provided", false));
+                return BadRequest(new ServiceResponse("Filter criteria is required", false));
             }
 
-            var salesData = await _salesDataService.GetLast30DaysForProductAsync(productId);
+            var salesData = await _salesDataService.GetFilteredSalesDataAsync(filter);
             
             if (!salesData.Any())
             {
-                return NotFound(new ServiceResponse("No sales data found for this product in the last 30 days", false));
+                return NotFound(new ServiceResponse("No sales data found for the specified criteria", false));
             }
 
             return Ok(salesData);
