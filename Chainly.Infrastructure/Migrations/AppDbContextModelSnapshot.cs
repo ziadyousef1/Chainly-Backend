@@ -250,6 +250,97 @@ namespace Chainly.Data.Migrations
                     b.ToTable("AspNetRoles", (string)null);
                 });
 
+            modelBuilder.Entity("Chainly.Domain.Models.SalesData", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ActivityFlag")
+                        .HasColumnType("int");
+
+                    b.Property<double>("AvgHumidity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("float(18)");
+
+                    b.Property<double>("AvgTemperature")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("float(18)");
+
+                    b.Property<double>("AvgWindLevel")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("float(18)");
+
+                    b.Property<long>("CityId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int?>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double>("Discount")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("float(18)");
+
+                    b.Property<string>("Dt")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<long>("FirstCategoryId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("HolidayFlag")
+                        .HasColumnType("int");
+
+                    b.Property<string>("HoursSale")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HoursStockStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("ManagementGroupId")
+                        .HasColumnType("bigint");
+
+                    b.Property<double>("Precpt")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("float(18)");
+
+                    b.Property<long>("ProductId")
+                        .HasColumnType("bigint");
+
+                    b.Property<double>("SaleAmount")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("float(18)");
+
+                    b.Property<long>("SecondCategoryId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("StockHour6_22Cnt")
+                        .HasColumnType("int");
+
+                    b.Property<long>("StoreId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ThirdCategoryId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("CityId", "StoreId", "ProductId", "Dt")
+                        .IsUnique();
+
+                    b.ToTable("SalesData");
+                });
+
             modelBuilder.Entity("Chainly.Domain.Models.Supplier", b =>
                 {
                     b.Property<int>("Id")
@@ -551,6 +642,15 @@ namespace Chainly.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("ProductionLine");
+                });
+
+            modelBuilder.Entity("Chainly.Domain.Models.SalesData", b =>
+                {
+                    b.HasOne("Chainly.Domain.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId");
+
+                    b.Navigation("Company");
                 });
 
             modelBuilder.Entity("Chainly.Domain.Models.Supplier", b =>
