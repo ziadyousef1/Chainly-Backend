@@ -17,6 +17,8 @@ namespace Chainly.Application.DTOs.Suppliers
         public string FacilityType { get; set; } = string.Empty;
         public string Sector { get; set; } = string.Empty;
         public string DistanceUnit => "km";
+        public decimal? TotalCarbon { get; set; }
+        public string? CarbonUnit { get; set; }
 
     }
 }

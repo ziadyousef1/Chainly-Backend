@@ -6,24 +6,73 @@ using Chainly.Domain.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using static Chainly.Domain.Constants.Permissions;
 
 namespace Chainly.Application.Services.Implementation;
 
 public class SupplierService(AppDbContext context, ISupplierImportService supplierImportService)
     : ISupplierService
 {
-    public async Task<IActionResult> GetSuppliersAsync(int companyId, int? pageNumber, int? pageSize)
+    public async Task<IActionResult> GetSuppliersAsync(int companyId, int? materialId, int? pageNumber, int? pageSize, int? Quantity = 1 , string? sortType = null)
     {
         var company = await context.Companies.FindAsync(companyId);
         if (company == null)
             return new NotFoundObjectResult($"Company {companyId} not found");
 
-        var supplierEntities = await context.Suppliers
-            .Where(s => s.CompanyId == null || s.CompanyId == company.Id)
-            .ToListAsync();
+        IQueryable<Supplier> query = context.Suppliers
+        .Where(s => s.CompanyId == null || s.CompanyId == company.Id)
+        .Include(s => s.SupplierMaterials)
+        .ThenInclude(sm => sm.Material);
 
-        var suppliers = supplierEntities
-            .Select(s => new SupplierDto
+        
+        if (!string.IsNullOrEmpty(sortType) && sortType.ToLower() == "carbon")
+        {
+            if (!materialId.HasValue)
+                return new BadRequestObjectResult("materialId is required for carbon sorting.");
+
+            query = query.Where(s => s.SupplierMaterials.Any(sm => sm.MaterialId == materialId.Value));
+        }
+
+        var supplierEntities = await query.ToListAsync();
+
+        var suppliers = supplierEntities.Select(s =>
+        {
+            var distance = CalculateDistance(
+                company.LocationLatitude,
+                company.LocationLongitude,
+                s.LocationLatitude,
+                s.LocationLongitude);
+
+            if (string.IsNullOrEmpty(sortType)) 
+            {
+                return new SupplierDto
+                {
+                    Id = s.Id,
+                    Name = s.Name,
+                    Latitude = s.LocationLatitude,
+                    Longitude = s.LocationLongitude,
+                    CompanyId = s.CompanyId,
+                    FacilityType = s.FacilityType,
+                    Sector = s.Sector,
+                    Distance = distance
+                };
+            }
+
+            
+            var supplierMaterial = materialId.HasValue
+                ? s.SupplierMaterials.FirstOrDefault(sm => sm.MaterialId == materialId.Value)
+                : null;
+
+            decimal? totalCarbon = null;
+            string carbonUnit = null;
+
+            if (supplierMaterial != null)
+            {
+                totalCarbon = distance * supplierMaterial.Material.EmissionValue * (Quantity ?? 1);
+                carbonUnit = $"Kg CO2e/{supplierMaterial.Material.Unit}";
+            }
+
+            return new SupplierDto
             {
                 Id = s.Id,
                 Name = s.Name,
@@ -32,16 +81,24 @@ public class SupplierService(AppDbContext context, ISupplierImportService suppli
                 CompanyId = s.CompanyId,
                 FacilityType = s.FacilityType,
                 Sector = s.Sector,
-                Distance = CalculateDistance(
-                    company.LocationLatitude,
-                    company.LocationLongitude,
-                    s.LocationLatitude,
-                    s.LocationLongitude)
-            })
-            .OrderBy(s => s.Distance)
-            .ToList();
+                Distance = distance,
+                TotalCarbon = totalCarbon,
+                CarbonUnit = carbonUnit
+            };
+        });
 
-        var totalCount = suppliers.Count;
+        
+        if (!string.IsNullOrEmpty(sortType))
+        {
+            suppliers = sortType.ToLower() switch
+            {
+                "carbon" => suppliers.OrderBy(s => s.TotalCarbon).ThenBy(s => s.Distance),
+                "distance" => suppliers.OrderBy(s => s.Distance).ThenBy(s => s.TotalCarbon ?? decimal.MaxValue),
+                _ => suppliers
+            };
+        }
+
+        var totalCount = suppliers.Count();
 
         if (pageNumber.HasValue && pageSize.HasValue && pageNumber > 0 && pageSize > 0)
         {
@@ -66,10 +123,12 @@ public class SupplierService(AppDbContext context, ISupplierImportService suppli
         });
     }
 
-    public async Task<IActionResult> GetSupplierAsync(int id, int companyId)
+    public async Task<IActionResult> GetSupplierAsync(int id, int companyId , int? materialId , int? quantity = 1)
     {
         var supplier = await context.Suppliers
-            .FirstOrDefaultAsync(s => s.Id == id && (s.CompanyId == companyId || s.CompanyId == null));
+        .Include(s => s.SupplierMaterials)
+        .ThenInclude(sm => sm.Material)
+        .FirstOrDefaultAsync(s => s.Id == id && (s.CompanyId == companyId || s.CompanyId == null));
 
         if (supplier == null)
             return new NotFoundObjectResult($"Supplier {id} not found");
@@ -77,6 +136,29 @@ public class SupplierService(AppDbContext context, ISupplierImportService suppli
         var company = await context.Companies.FindAsync(companyId);
         if (company == null)
             return new NotFoundObjectResult($"Company {companyId} not found");
+
+        var distance = CalculateDistance(
+            company.LocationLatitude,
+            company.LocationLongitude,
+            supplier.LocationLatitude,
+            supplier.LocationLongitude);
+
+
+        decimal? totalCarbon = null;
+        string carbonUnit = null;
+
+        
+        if (materialId.HasValue)
+        {
+            var supplierMaterial = supplier.SupplierMaterials
+                .FirstOrDefault(sm => sm.MaterialId == materialId.Value);
+
+            if (supplierMaterial != null)
+            {
+                totalCarbon = distance * supplierMaterial.Material.EmissionValue * (quantity ?? 1);
+                carbonUnit = $"Kg CO2e/{supplierMaterial.Material.Unit}";
+            }
+        }
 
         var dto = new SupplierDto
         {
@@ -87,14 +169,14 @@ public class SupplierService(AppDbContext context, ISupplierImportService suppli
             CompanyId = supplier.CompanyId,
             FacilityType = supplier.FacilityType,
             Sector = supplier.Sector,
-            Distance = CalculateDistance(
-                company.LocationLatitude,
-                company.LocationLongitude,
-                supplier.LocationLatitude,
-                supplier.LocationLongitude)
+            Distance = distance,
+            TotalCarbon = totalCarbon,
+            CarbonUnit = carbonUnit
         };
 
+
         return new OkObjectResult(dto);
+     
     }
 
     public async Task<IActionResult> CreateSupplierAsync(SupplierDto dto, int companyId)

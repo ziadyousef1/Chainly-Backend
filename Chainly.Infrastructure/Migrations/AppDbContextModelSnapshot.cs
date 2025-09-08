@@ -385,6 +385,9 @@ namespace Chainly.Data.Migrations
                     b.Property<int>("MaterialId")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("decimal(18,2)");
+
                     b.HasKey("SupplierId", "MaterialId");
 
                     b.HasIndex("MaterialId");

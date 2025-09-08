@@ -15,5 +15,7 @@ namespace Chainly.Domain.Models
         public int SupplierId { get; set; }
         public Supplier Supplier { get; set; }
 
+        //public decimal Quantity { get; set; }
+
     }
 }

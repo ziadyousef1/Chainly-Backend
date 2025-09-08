@@ -8,7 +8,8 @@ namespace Chainly.Application.DTOs.Suppliers
 {
     public class SupplierMaterialImportDto
     {
-        public string SupplierName { get; set; }
-        public string MaterialName { get; set; }
+        public int SupplierId { get; set; }
+        public int MaterialId { get; set; }
     }
+
 }
