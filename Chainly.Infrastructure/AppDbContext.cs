@@ -19,6 +19,7 @@ namespace Chainly.Data
 
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderTracking> OrderTracking { get; set; }
+        public DbSet<SalesData> SalesData { get; set; }
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
         }
@@ -74,6 +75,34 @@ namespace Chainly.Data
             builder.Entity<Role>()
                 .HasIndex(r => new { r.Name, r.CompanyId })
                 .IsUnique();
+
+            builder.Entity<SalesData>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                
+                entity.Property(e => e.CityId).IsRequired();
+                entity.Property(e => e.StoreId).IsRequired();
+                entity.Property(e => e.ManagementGroupId).IsRequired();
+                entity.Property(e => e.FirstCategoryId).IsRequired();
+                entity.Property(e => e.SecondCategoryId).IsRequired();
+                entity.Property(e => e.ThirdCategoryId).IsRequired();
+                entity.Property(e => e.ProductId).IsRequired();
+                entity.Property(e => e.Dt).IsRequired().HasMaxLength(50);
+                
+                entity.Property(e => e.SaleAmount).HasPrecision(18, 4);
+                entity.Property(e => e.Discount).HasPrecision(18, 4);
+                entity.Property(e => e.Precpt).HasPrecision(18, 4);
+                entity.Property(e => e.AvgTemperature).HasPrecision(18, 4);
+                entity.Property(e => e.AvgHumidity).HasPrecision(18, 4);
+                entity.Property(e => e.AvgWindLevel).HasPrecision(18, 4);
+                
+                entity.HasOne(e => e.Company)
+                      .WithMany()
+                      .HasForeignKey(e => e.CompanyId);
+                      
+                entity.HasIndex(e => new { e.CityId, e.StoreId, e.ProductId, e.Dt })
+                      .IsUnique();
+            });
         }
     }
 }

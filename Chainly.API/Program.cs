@@ -1,4 +1,3 @@
-using Chainly.Application.Extensions;
 using Chainly.Infrastructure.Extensions;
 using Chainly.Infrastructure.Helpers;
 

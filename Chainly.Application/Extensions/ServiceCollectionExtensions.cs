@@ -23,6 +23,7 @@ namespace Chainly.Application.Extensions
             services.AddScoped<ISupplierService, SupplierService>();
             services.AddScoped<ISupplierMaterialService, SupplierMaterialService>();
             services.AddScoped<IRoleService, RoleService>();
+            services.AddScoped<ISalesDataService, SalesDataService>();
             return services;
         }
     }
