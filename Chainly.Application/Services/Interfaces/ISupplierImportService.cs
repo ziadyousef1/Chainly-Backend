@@ -25,6 +25,12 @@ namespace Chainly.Application.Services.Interfaces
         Task<IEnumerable<SupplierMaterialImportDto>> ReadSupplierMaterialsFromExcelAsync(string filePath);
         Task<int> ImportSupplierMaterialsAsync(IEnumerable<SupplierMaterialImportDto> supplierMaterials);
         Task<bool> ValidateSupplierMaterialDataAsync(IEnumerable<SupplierMaterialImportDto> supplierMaterials);
+
+        /// <summary>
+        /// Imports all data from Excel file: Suppliers, Materials, and their relationships in one call
+        /// </summary>
+        Task<(int SuppliersImported, int MaterialsImported, int RelationshipsImported)> ImportAllDataFromExcelAsync(string filePath, int? companyId = null);
+
     }
 }
 

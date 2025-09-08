@@ -8,8 +8,13 @@ namespace Chainly.Application.DTOs.Suppliers
 {
     public class MaterialImportDto
     {
-        public string Name { get; set; }
+        /// <summary>
+        /// The ID from Excel file - used to preserve original IDs
+        /// </summary>
+        public int? ExcelId { get; set; }
+
+        public string Name { get; set; } = string.Empty;
         public decimal EmissionValue { get; set; }
-        public string Unit { get; set; }
+        public string Unit { get; set; } = string.Empty;
     }
 }
