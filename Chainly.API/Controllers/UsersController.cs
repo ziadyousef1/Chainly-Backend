@@ -6,11 +6,12 @@ public class UsersController(IUserService userService) : BaseController
 {
     [HttpGet]
     [Authorize(Permissions.Users.View)]
-    public async Task<IActionResult> GetAllUsers()
+    public async Task<IActionResult> GetAllUsers([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         int companyId = GetCompanyId();
-        return await userService.GetAllUsersAsync(companyId);
+        return await userService.GetAllUsersAsync(companyId, pageNumber, pageSize);
     }
+
 
     [HttpGet("{id}")]
     [Authorize(Permissions.Users.View)]

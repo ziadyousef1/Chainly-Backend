@@ -9,7 +9,7 @@ namespace Chainly.Application.Services.Implementation;
 
 public class ProductionLineService(AppDbContext context) : IProductionLineService
 {
-    public async Task<IActionResult> GetAllAsync(int companyId, int pageNumber = 1, int pageSize = 10)
+    public async Task<IActionResult> GetAllProductionLinesAsync(int companyId, int pageNumber = 1, int pageSize = 10)
     {
         if (pageNumber <= 0) pageNumber = 1;
         if (pageSize <= 0) pageSize = 10;
@@ -44,7 +44,7 @@ public class ProductionLineService(AppDbContext context) : IProductionLineServic
     }
 
 
-    public async Task<IActionResult> GetAsync(int id, int companyId)
+    public async Task<IActionResult> GetProductionLineByIdAsync(int id, int companyId)
     {
         var line = await context.ProductionLines
             .FirstOrDefaultAsync(l => l.Id == id && l.CompanyId == companyId);
@@ -62,7 +62,7 @@ public class ProductionLineService(AppDbContext context) : IProductionLineServic
         return new OkObjectResult(dto);
     }
 
-    public async Task<IActionResult> CreateAsync(ProductionLineCreateDto dto, int companyId)
+    public async Task<IActionResult> CreateProductionLineAsync(ProductionLineCreateDto dto, int companyId)
     {
         if (string.IsNullOrWhiteSpace(dto.LineName))
             return new BadRequestObjectResult(new { message = "Line name is required" });
@@ -87,7 +87,7 @@ public class ProductionLineService(AppDbContext context) : IProductionLineServic
     }
 
 
-    public async Task<IActionResult> UpdateAsync(int id, int companyId, ProductionLineUpdateDto dto)
+    public async Task<IActionResult> UpdateProductionLineAsync(int id, int companyId, ProductionLineUpdateDto dto)
     {
         var line = await context.ProductionLines
             .FirstOrDefaultAsync(l => l.Id == id && l.CompanyId == companyId);
@@ -111,7 +111,7 @@ public class ProductionLineService(AppDbContext context) : IProductionLineServic
         return new OkObjectResult(new { message = "Production line updated successfully" });
     }
 
-    public async Task<IActionResult> DeleteAsync(int id, int companyId)
+    public async Task<IActionResult> DeleteProductionLineAsync(int id, int companyId)
     {
         var line = await context.ProductionLines
             .FirstOrDefaultAsync(l => l.Id == id && l.CompanyId == companyId);

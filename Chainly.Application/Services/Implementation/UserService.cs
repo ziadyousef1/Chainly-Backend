@@ -8,28 +8,29 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Chainly.Application.Services
 {
-    public class UserService : IUserService
+    public class UserService(UserManager<User> userManager, AppDbContext context) : IUserService
     {
-        private readonly UserManager<User> _userManager;
-        private readonly AppDbContext _context;
-
-        public UserService(UserManager<User> userManager, AppDbContext context)
+        public async Task<IActionResult> GetAllUsersAsync(int companyId, int pageNumber = 1, int pageSize = 10)
         {
-            _userManager = userManager;
-            _context = context;
-        }
+            if (pageNumber <= 0) pageNumber = 1;
+            if (pageSize <= 0) pageSize = 10;
 
-        public async Task<IActionResult> GetAllUsersAsync(int companyId)
-        {
-            var users = await _context.Users
-                .Where(u => u.CompanyId == companyId)
+            var query = context.Users
+                .Where(u => u.CompanyId == companyId);
+
+            var totalCount = await query.CountAsync();
+
+            var users = await query
+                .OrderBy(u => u.Id)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
             var userDtos = new List<UserDto>();
 
             foreach (var user in users)
             {
-                var roles = await _userManager.GetRolesAsync(user);
+                var roles = await userManager.GetRolesAsync(user);
                 userDtos.Add(new UserDto
                 {
                     Id = user.Id,
@@ -39,7 +40,16 @@ namespace Chainly.Application.Services
                 });
             }
 
-            return new OkObjectResult(userDtos);
+            var result = new
+            {
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                Items = userDtos
+            };
+
+            return new OkObjectResult(result);
         }
 
         public async Task<IActionResult> CreateUserAsync(UserCreateDto dto, int companyId)
@@ -47,7 +57,7 @@ namespace Chainly.Application.Services
             if (dto.Password != dto.ConfirmPassword)
                 return new BadRequestObjectResult("Password and confirmation do not match");
 
-            var existingUser = await _userManager.FindByEmailAsync(dto.Email);
+            var existingUser = await userManager.FindByEmailAsync(dto.Email);
             if (existingUser != null)
                 return new BadRequestObjectResult("Email already exists");
 
@@ -59,7 +69,7 @@ namespace Chainly.Application.Services
                 CompanyId = companyId,
             };
 
-            var result = await _userManager.CreateAsync(user, dto.Password);
+            var result = await userManager.CreateAsync(user, dto.Password);
             if (!result.Succeeded)
                 return new BadRequestObjectResult(result.Errors);
 
@@ -67,12 +77,12 @@ namespace Chainly.Application.Services
             {
                 foreach (var roleName in dto.Roles)
                 {
-                    var role = await _context.Roles
+                    var role = await context.Roles
                         .FirstOrDefaultAsync(r => r.Name == roleName && r.CompanyId == companyId);
 
                     if (role != null)
                     {
-                        _context.UserRoles.Add(new IdentityUserRole<int>
+                        context.UserRoles.Add(new IdentityUserRole<int>
                         {
                             UserId = user.Id,
                             RoleId = role.Id
@@ -86,7 +96,7 @@ namespace Chainly.Application.Services
 
         public async Task<IActionResult> UpdateUserAsync(int id, UserUpdateDto dto, int companyId)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.CompanyId == companyId);
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == id && u.CompanyId == companyId);
             if (user == null)
                 return new NotFoundObjectResult("User not found");
 
@@ -94,7 +104,7 @@ namespace Chainly.Application.Services
 
             if (!string.IsNullOrEmpty(dto.Email))
             {
-                var existingUser = await _context.Users
+                var existingUser = await context.Users
                     .FirstOrDefaultAsync(u => u.Email == dto.Email && u.Id != user.Id);
                 if (existingUser != null)
                     return new BadRequestObjectResult("Email is already taken by another user");
@@ -108,19 +118,19 @@ namespace Chainly.Application.Services
                 if (string.IsNullOrEmpty(dto.ConfirmPassword) || dto.Password != dto.ConfirmPassword)
                     return new BadRequestObjectResult("Password and confirmation do not match");
 
-                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                var result = await _userManager.ResetPasswordAsync(user, token, dto.Password);
+                var token = await userManager.GeneratePasswordResetTokenAsync(user);
+                var result = await userManager.ResetPasswordAsync(user, token, dto.Password);
                 if (!result.Succeeded)
                     return new BadRequestObjectResult(result.Errors);
             }
 
             if (dto.Roles != null)
             {
-                var validRoles = await _context.Roles
+                var validRoles = await context.Roles
                     .Where(r => r.CompanyId == companyId && dto.Roles.Contains(r.Name))
                     .ToListAsync();
 
-                var currentUserRoles = await _context.UserRoles
+                var currentUserRoles = await context.UserRoles
                     .Where(ur => ur.UserId == user.Id)
                     .ToListAsync();
 
@@ -129,7 +139,7 @@ namespace Chainly.Application.Services
                     .ToList();
 
                 if (rolesToRemove.Any())
-                    _context.UserRoles.RemoveRange(rolesToRemove);
+                    context.UserRoles.RemoveRange(rolesToRemove);
 
                 var rolesToAdd = validRoles
                     .Where(vr => currentUserRoles.All(ur => ur.RoleId != vr.Id))
@@ -141,30 +151,30 @@ namespace Chainly.Application.Services
                     .ToList();
 
                 if (rolesToAdd.Any())
-                    await _context.UserRoles.AddRangeAsync(rolesToAdd);
+                    await context.UserRoles.AddRangeAsync(rolesToAdd);
             }
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return new OkObjectResult("User updated successfully");
         }
 
         public async Task<IActionResult> DeleteUserAsync(int id, int companyId)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.CompanyId == companyId);
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == id && u.CompanyId == companyId);
             if (user == null)
                 return new NotFoundObjectResult("User not found");
 
-            await _userManager.DeleteAsync(user);
+            await userManager.DeleteAsync(user);
             return new OkObjectResult("User deleted successfully");
         }
 
         public async Task<IActionResult> GetUserByIdAsync(int id, int companyId)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.CompanyId == companyId);
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == id && u.CompanyId == companyId);
             if (user == null)
                 return new NotFoundObjectResult("User not found");
 
-            var roles = await _userManager.GetRolesAsync(user);
+            var roles = await userManager.GetRolesAsync(user);
 
             var userDto = new UserDto
             {
@@ -179,25 +189,25 @@ namespace Chainly.Application.Services
 
         public async Task<IActionResult> GetUserRolesAsync(int id)
         {
-            var user = await _userManager.FindByIdAsync(id.ToString());
+            var user = await userManager.FindByIdAsync(id.ToString());
             if (user == null)
                 return new NotFoundObjectResult("User not found");
 
-            var roles = await _userManager.GetRolesAsync(user);
+            var roles = await userManager.GetRolesAsync(user);
             return new OkObjectResult(roles);
         }
 
         public async Task<IActionResult> UpdateUserRolesAsync(int id, List<string> rolesToAssign)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == id);
             if (user == null)
                 return new NotFoundObjectResult("User not found");
 
-            var validRoles = await _context.Roles
+            var validRoles = await context.Roles
                 .Where(r => r.CompanyId == user.CompanyId && rolesToAssign.Contains(r.Name))
                 .ToListAsync();
 
-            var currentUserRoles = await _context.UserRoles
+            var currentUserRoles = await context.UserRoles
                 .Where(ur => ur.UserId == user.Id)
                 .ToListAsync();
 
@@ -205,7 +215,7 @@ namespace Chainly.Application.Services
                 .Where(ur => !validRoles.Any(vr => vr.Id == ur.RoleId))
                 .ToList();
             if (rolesToRemove.Any())
-                _context.UserRoles.RemoveRange(rolesToRemove);
+                context.UserRoles.RemoveRange(rolesToRemove);
 
             var rolesToAdd = validRoles
                 .Where(vr => !currentUserRoles.Any(ur => ur.RoleId == vr.Id))
@@ -216,9 +226,9 @@ namespace Chainly.Application.Services
                 })
                 .ToList();
             if (rolesToAdd.Any())
-                await _context.UserRoles.AddRangeAsync(rolesToAdd);
+                await context.UserRoles.AddRangeAsync(rolesToAdd);
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return new OkObjectResult("User roles updated successfully");
         }
     }

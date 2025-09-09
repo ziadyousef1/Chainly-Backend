@@ -12,23 +12,41 @@ namespace Chainly.Application.Services.Implementation;
 
 public class RoleService(RoleManager<Role> roleManager, AppDbContext context) : IRoleService
 {
-    public async Task<IActionResult> GetAllRolesAsync(int companyId)
+    public async Task<IActionResult> GetAllRolesAsync(int companyId, int pageNumber = 1, int pageSize = 10)
     {
-        var roles = await roleManager.Roles
-            .Where(r => r.CompanyId == companyId)
+        if (pageNumber <= 0) pageNumber = 1;
+        if (pageSize <= 0) pageSize = 10;
+
+        var query = roleManager.Roles
+            .Where(r => r.CompanyId == companyId);
+
+        var totalCount = await query.CountAsync();
+
+        var roles = await query
+            .OrderBy(r => r.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
         var result = roles.Select(r => new RoleDto
         {
             Id = r.Id,
             Name = r.Name,
-        });
+        }).ToList();
 
-        return new OkObjectResult(result);
+        var response = new
+        {
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+            Items = result
+        };
+
+        return new OkObjectResult(response);
     }
 
-
-    public async Task<IActionResult> GetRoleAsync(int roleId, int companyId)
+    public async Task<IActionResult> GetRoleByIdAsync(int roleId, int companyId)
     {
         var role = await context.Roles
             .FirstOrDefaultAsync(r => r.Id == roleId && r.CompanyId == companyId);
@@ -84,6 +102,7 @@ public class RoleService(RoleManager<Role> roleManager, AppDbContext context) : 
 
         return new OkObjectResult(new { message = "Role created successfully", role.Id, role.Name });
     }
+
     public async Task<IActionResult> UpdateRoleAsync(int roleId, int companyId, RoleUpdatePermissionsDto dto)
     {
         var role = await roleManager.Roles
@@ -110,7 +129,7 @@ public class RoleService(RoleManager<Role> roleManager, AppDbContext context) : 
         foreach (var permission in selectedPermissions)
             await roleManager.AddClaimAsync(role, new Claim(CustomClaimTypes.Permission, permission));
 
-        return new OkObjectResult(new { message = "Role updated successfully"});
+        return new OkObjectResult(new { message = "Role updated successfully" });
     }
 
 

@@ -11,12 +11,11 @@ public class RolesController(IRoleService roleService) : BaseController
 {
     [HttpGet]
     [Authorize(Permissions.Roles.View)]
-    public async Task<IActionResult> GetAllRoles()
+    public async Task<IActionResult> GetAllRoles([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         int companyId = GetCompanyId();
-        return await roleService.GetAllRolesAsync(companyId);
+        return await roleService.GetAllRolesAsync(companyId, pageNumber, pageSize);
     }
-
 
     [HttpPost]
     [Authorize(Permissions.Roles.Create)]
@@ -31,7 +30,7 @@ public class RolesController(IRoleService roleService) : BaseController
     public async Task<IActionResult> GetRole(int roleId)
     {
         int companyId = GetCompanyId();
-        return await roleService.GetRoleAsync(roleId, companyId);
+        return await roleService.GetRoleByIdAsync(roleId, companyId);
     }
 
     [HttpPut("{roleId}")]

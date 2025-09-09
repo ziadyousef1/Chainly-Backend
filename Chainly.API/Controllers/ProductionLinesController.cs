@@ -8,41 +8,41 @@ public class ProductionLinesController(IProductionLineService productionLineServ
 {
     [HttpGet]
     [Authorize(Permissions.ProductionLines.View)]
-    public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    public async Task<IActionResult> GetAllProductionLines([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         int companyId = GetCompanyId();
-        return await productionLineService.GetAllAsync(companyId, pageNumber, pageSize);
+        return await productionLineService.GetAllProductionLinesAsync(companyId, pageNumber, pageSize);
     }
 
     [HttpPost]
     [Authorize(Permissions.ProductionLines.Create)]
-    public async Task<IActionResult> Create([FromBody] ProductionLineCreateDto model)
+    public async Task<IActionResult> CreateProductionLine([FromBody] ProductionLineCreateDto model)
     {
         int companyId = GetCompanyId();
-        return await productionLineService.CreateAsync(model, companyId);
+        return await productionLineService.CreateProductionLineAsync(model, companyId);
     }
 
     [HttpGet("{id}")]
     [Authorize(Permissions.ProductionLines.View)]
-    public async Task<IActionResult> Get(int id)
+    public async Task<IActionResult> GetProductionLine(int id)
     {
         int companyId = GetCompanyId();
-        return await productionLineService.GetAsync(id, companyId);
+        return await productionLineService.GetProductionLineByIdAsync(id, companyId);
     }
 
     [HttpPut("{id}")]
     [Authorize(Permissions.ProductionLines.Update)]
-    public async Task<IActionResult> Update(int id, [FromBody] ProductionLineUpdateDto model)
+    public async Task<IActionResult> UpdateProductionLine(int id, [FromBody] ProductionLineUpdateDto model)
     {
         int companyId = GetCompanyId();
-        return await productionLineService.UpdateAsync(id, companyId, model);
+        return await productionLineService.UpdateProductionLineAsync(id, companyId, model);
     }
 
     [HttpDelete("{id}")]
     [Authorize(Permissions.ProductionLines.Delete)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> DeleteProductionLine(int id)
     {
         int companyId = GetCompanyId();
-        return await productionLineService.DeleteAsync(id, companyId);
+        return await productionLineService.DeleteProductionLineAsync(id, companyId);
     }
 }
