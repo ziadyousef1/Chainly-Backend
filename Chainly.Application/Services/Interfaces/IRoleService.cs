@@ -1,13 +1,14 @@
 ﻿using Chainly.Application.DTOs.Role;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Chainly.Application.Services.Interfaces;
 
 public interface IRoleService
 {
-    Task<IEnumerable<RoleDto>> GetRolesAsync(int companyId);
-    Task<(bool Success, string Message)> AddRoleAsync(string roleName, int companyId);
-    Task<RolePermissionsDto?> GetPermissionsAsync(int roleId, int companyId);
+    Task<IActionResult> GetAllRolesAsync(int companyId);
+    Task<IActionResult> GetRoleAsync(int roleId, int companyId);
+    Task<IActionResult> CreateRoleAsync(RoleCreateDto dto, int companyId);
+    Task<IActionResult> UpdateRoleAsync(int roleId, int companyId, RoleUpdatePermissionsDto dto);
+    Task<IActionResult> DeleteRoleAsync(int roleId, int companyId);
 
-    Task<(bool Success, string Message)>
-        UpdatePermissionsAsync(int roleId, int companyId, string[] selectedPermissions);
 }

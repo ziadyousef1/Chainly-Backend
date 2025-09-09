@@ -2,5 +2,6 @@
 
 public class RoleUpdatePermissionsDto
 {
-    public string[] SelectedPermissions { get; set; } = Array.Empty<string>();
+    public string Name { get; set; } = string.Empty;
+    public Dictionary<string, List<PermissionDto>> Permissions { get; set; } = new();
 }

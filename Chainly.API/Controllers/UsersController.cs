@@ -43,18 +43,4 @@ public class UsersController(IUserService userService) : BaseController
         int companyId = GetCompanyId();
         return await userService.DeleteUserAsync(id, companyId);
     }
-
-    [HttpGet("{id}/roles")]
-    [Authorize(Permissions.Users.View)]
-    public async Task<IActionResult> GetUserRoles(int id)
-    {
-        return await userService.GetUserRolesAsync(id);
-    }
-
-    [HttpPut("{id}/roles")]
-    [Authorize(Permissions.Users.Update)]
-    public async Task<IActionResult> UpdateUserRoles(int id, [FromBody] List<string> rolesToAssign)
-    {
-        return await userService.UpdateUserRolesAsync(id, rolesToAssign);
-    }
 }
