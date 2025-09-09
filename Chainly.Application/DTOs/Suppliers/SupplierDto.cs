@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Chainly.Application.DTOs
+namespace Chainly.Application.DTOs.Suppliers
 {
     public class SupplierDto
     {
@@ -17,6 +17,8 @@ namespace Chainly.Application.DTOs
         public string FacilityType { get; set; } = string.Empty;
         public string Sector { get; set; } = string.Empty;
         public string DistanceUnit => "km";
+        public decimal? TotalCarbon { get; set; }
+        public string? CarbonUnit { get; set; }
 
     }
 }

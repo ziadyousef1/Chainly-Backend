@@ -1,6 +1,6 @@
-﻿
+using Microsoft.AspNetCore.Authorization;
 
-namespace Chainly.Filters;
+namespace Chainly.Infrastructure.Filters;
 
 public class PermissionRequirement : IAuthorizationRequirement
 {

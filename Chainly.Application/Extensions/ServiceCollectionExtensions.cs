@@ -13,15 +13,17 @@ namespace Chainly.Application.Extensions
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
         {
+            services.Configure<AzureOpenAISettings>(configuration.GetSection("AzureOpenAI"));
+            
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IAzureOpenAIService, AzureOpenAIService>();
             services.AddScoped<IOrderService, OrderService>();
             services.AddScoped<ISupplierImportService, SupplierImportService>();
             services.AddScoped<ISupplierService, SupplierService>();
+            services.AddScoped<ISupplierMaterialService, SupplierMaterialService>();
             services.AddScoped<IRoleService, RoleService>();
-            services.AddScoped<IRoleService, RoleService>();
-
+            services.AddScoped<ISalesDataService, SalesDataService>();
             return services;
         }
     }
