@@ -1,4 +1,4 @@
-using Chainly.Application.DTOs.User;
+using Chainly.Application.DTOs.Users;
 using Chainly.Application.Interfaces;
 using Chainly.Data;
 using Chainly.Domain.Models;

@@ -1,4 +1,4 @@
-﻿using Chainly.Application.DTOs.Role;
+﻿using Chainly.Application.DTOs.Roles;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Chainly.Application.Services.Interfaces;

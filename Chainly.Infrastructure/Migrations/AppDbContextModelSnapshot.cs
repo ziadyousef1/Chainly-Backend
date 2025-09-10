@@ -164,6 +164,28 @@ namespace Chainly.Data.Migrations
                     b.ToTable("OrderTracking");
                 });
 
+            modelBuilder.Entity("Chainly.Domain.Models.Product", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Stock")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id", "CompanyId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.ToTable("Products");
+                });
+
             modelBuilder.Entity("Chainly.Domain.Models.ProductionLine", b =>
                 {
                     b.Property<int>("Id")
@@ -384,9 +406,6 @@ namespace Chainly.Data.Migrations
 
                     b.Property<int>("MaterialId")
                         .HasColumnType("int");
-
-                    b.Property<decimal>("Quantity")
-                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("SupplierId", "MaterialId");
 
@@ -625,6 +644,17 @@ namespace Chainly.Data.Migrations
                     b.Navigation("UpdatedByNavigation");
                 });
 
+            modelBuilder.Entity("Chainly.Domain.Models.Product", b =>
+                {
+                    b.HasOne("Chainly.Domain.Models.Company", "Company")
+                        .WithMany("Products")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+                });
+
             modelBuilder.Entity("Chainly.Domain.Models.ProductionLine", b =>
                 {
                     b.HasOne("Chainly.Domain.Models.Company", "Company")
@@ -748,6 +778,8 @@ namespace Chainly.Data.Migrations
 
             modelBuilder.Entity("Chainly.Domain.Models.Company", b =>
                 {
+                    b.Navigation("Products");
+
                     b.Navigation("Users");
                 });
 

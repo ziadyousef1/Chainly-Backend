@@ -1,4 +1,4 @@
-﻿namespace Chainly.Application.DTOs.Role;
+﻿namespace Chainly.Application.DTOs.Roles;
 
 public class RoleUpdatePermissionsDto
 {

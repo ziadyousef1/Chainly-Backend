@@ -1,4 +1,4 @@
-using Chainly.Application.DTOs.User;
+using Chainly.Application.DTOs.Users;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Chainly.Application.Interfaces

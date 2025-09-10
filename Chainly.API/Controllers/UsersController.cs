@@ -1,4 +1,4 @@
-using Chainly.Application.DTOs.User;
+using Chainly.Application.DTOs.Users;
 namespace Chainly.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]

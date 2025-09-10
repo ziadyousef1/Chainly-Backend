@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Chainly.Data
 {
-    public class AppDbContext : IdentityDbContext<User, Role, int>
+    public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext<User, Role, int>(options)
     {
         public DbSet<Company> Companies { get; set; }
         public DbSet<ProductionLine> ProductionLines { get; set; }
@@ -20,9 +20,9 @@ namespace Chainly.Data
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderTracking> OrderTracking { get; set; }
         public DbSet<SalesData> SalesData { get; set; }
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-        {
-        }
+
+        public DbSet<Product> Products { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -102,6 +102,14 @@ namespace Chainly.Data
                       
                 entity.HasIndex(e => new { e.CityId, e.StoreId, e.ProductId, e.Dt })
                       .IsUnique();
+
+                builder.Entity<Product>()
+                    .HasKey(p => new { p.Id, p.CompanyId });
+
+                builder.Entity<Product>()
+                    .HasOne(p => p.Company)
+                    .WithMany(c => c.Products)
+                    .HasForeignKey(p => p.CompanyId);
             });
         }
     }

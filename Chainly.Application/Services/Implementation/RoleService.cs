@@ -1,5 +1,5 @@
 ﻿using System.Security.Claims;
-using Chainly.Application.DTOs.Role;
+using Chainly.Application.DTOs.Roles;
 using Chainly.Application.Services.Interfaces;
 using Chainly.Data;
 using Chainly.Domain.Constants;

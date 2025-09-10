@@ -1,4 +1,4 @@
-﻿namespace Chainly.Application.DTOs.User;
+﻿namespace Chainly.Application.DTOs.Users;
 
 public class UserDto
 {
