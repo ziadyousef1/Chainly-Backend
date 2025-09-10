@@ -21,7 +21,7 @@ public class ProductsController(IProductService productService) : BaseController
     }
 
     [HttpPost("import")]
-   // [Authorize(Permissions.Products.Create)]
+   [Authorize(Permissions.Products.Import)]
     public async Task<IActionResult> ImportProducts(IFormFile file , int companyId)
     {
         if (file == null || file.Length == 0)

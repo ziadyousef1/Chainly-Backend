@@ -47,6 +47,7 @@ public class ReportService(AppDbContext context) : IReportService
 
         return new OkObjectResult(new { message = "Report stored successfully." });
     }
+
     public async Task<IActionResult> GetAllReportsAsync(int companyId, int pageNumber = 1, int pageSize = 10,
         DateTime? startDate = null, DateTime? endDate = null)
     {
@@ -88,7 +89,8 @@ public class ReportService(AppDbContext context) : IReportService
         return new OkObjectResult(response);
     }
 
-    public async Task<IActionResult> GetReportByIdAsync(int reportId, int companyId, int pageNumber = 1, int pageSize = 10)
+    public async Task<IActionResult> GetReportByIdAsync(int reportId, int companyId, int pageNumber = 1,
+        int pageSize = 10)
     {
         if (pageNumber <= 0) pageNumber = 1;
         if (pageSize <= 0) pageSize = 10;
@@ -144,5 +146,56 @@ public class ReportService(AppDbContext context) : IReportService
         };
 
         return new OkObjectResult(result);
+    }
+
+    public async Task<IActionResult> GetReportSummaryAsync(
+        int companyId,
+        int? productionLineId = null,
+        DateTime? startDate = null,
+        DateTime? endDate = null,
+        int pageNumber = 1,
+        int pageSize = 10)
+    {
+        var query = context.Reports
+            .Include(r => r.ProductionLine)
+            .Include(r => r.DefectiveProducts)
+            .Where(r => r.ProductionLine.CompanyId == companyId);
+
+        if (productionLineId.HasValue)
+            query = query.Where(r => r.ProductionLineId == productionLineId.Value);
+
+        if (startDate.HasValue)
+            query = query.Where(r => r.ReportDate.Date >= startDate.Value.Date);
+
+        if (endDate.HasValue)
+            query = query.Where(r => r.ReportDate.Date <= endDate.Value.Date);
+
+        var reports = await query.ToListAsync();
+
+        var totalDefectiveProducts = reports.SelectMany(r => r.DefectiveProducts).Count();
+        var defectiveProductsPaged = reports
+            .SelectMany(r => r.DefectiveProducts)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Select(d => new DefectiveProductReportDto()
+            {
+                Id = d.ProductId,
+                DetectedAt = d.Time.ToString("o")
+            }).ToList();
+
+        var summary = new ReportSummaryDto
+        {
+            ProductionLineId = productionLineId ?? 0,
+            TotalProducts = reports.Sum(r => r.TotalProducts),
+            DefectiveProductsCount = reports.Sum(r => r.DefectiveProductsCount),
+            NonDefectiveProductsCount = reports.Sum(r => r.GoodProducts),
+            TotalDefectiveItems = totalDefectiveProducts,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalPages = (int)Math.Ceiling((double)totalDefectiveProducts / pageSize),
+            DefectiveProducts = defectiveProductsPaged
+        };
+
+        return new OkObjectResult(summary);
     }
 }

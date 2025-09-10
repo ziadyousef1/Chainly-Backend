@@ -36,4 +36,15 @@ public class ReportsController(IReportService reportService, IAiInsightsService 
         int companyId = GetCompanyId();
         return await reportService.GetReportByIdAsync(reportId, companyId, pageNumber, pageSize);
     }
+
+    [HttpGet("summary")]
+    [Authorize(Permissions.Reports.View)]
+    public async Task<IActionResult> GetReportSummary(
+        int? productionLineId,
+        DateTime? startDate,
+        DateTime? endDate)
+    {
+        int companyId = GetCompanyId();
+        return await reportService.GetReportSummaryAsync(companyId, productionLineId, startDate, endDate);
+    }
 }
