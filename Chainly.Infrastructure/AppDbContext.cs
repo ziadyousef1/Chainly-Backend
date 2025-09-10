@@ -36,7 +36,7 @@ namespace Chainly.Data
             builder.Entity<ProductionLine>()
                 .HasMany(pl => pl.Reports)
                 .WithOne(r => r.ProductionLine)
-                .HasForeignKey(r => r.productionLineId)
+                .HasForeignKey(r => r.ProductionLineId)
                 .OnDelete(DeleteBehavior.Cascade);
             // Configure one-to-many relationship between Report and DefectiveProduct
             builder.Entity<Report>()

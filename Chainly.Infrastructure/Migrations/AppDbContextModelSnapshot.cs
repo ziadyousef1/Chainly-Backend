@@ -60,8 +60,9 @@ namespace Chainly.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
+                    b.Property<string>("ProductId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("ReportId")
                         .HasColumnType("int");
@@ -222,15 +223,22 @@ namespace Chainly.Data.Migrations
                     b.Property<int>("GoodProducts")
                         .HasColumnType("int");
 
+                    b.Property<int>("ProductionLineId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("ReportDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("productionLineId")
-                        .HasColumnType("int");
+                    b.Property<string>("SessionId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("VideoName")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("productionLineId");
+                    b.HasIndex("ProductionLineId");
 
                     b.ToTable("Reports");
                 });
@@ -670,7 +678,7 @@ namespace Chainly.Data.Migrations
                 {
                     b.HasOne("Chainly.Domain.Models.ProductionLine", "ProductionLine")
                         .WithMany("Reports")
-                        .HasForeignKey("productionLineId")
+                        .HasForeignKey("ProductionLineId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

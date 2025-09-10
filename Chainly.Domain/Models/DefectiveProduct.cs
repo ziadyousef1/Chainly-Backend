@@ -12,7 +12,7 @@ namespace Chainly.Domain.Models
         public int ReportId { get; set; }
         public Report Report { get; set; }
         public DateTime Time { get; set; }
-        public int ProductId { get; set; }
+        public string ProductId { get; set; }
         public string DefectiveType { get; set; }
     }
 }
