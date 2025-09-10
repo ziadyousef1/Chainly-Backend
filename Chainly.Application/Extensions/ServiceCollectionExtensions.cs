@@ -14,6 +14,7 @@ namespace Chainly.Application.Extensions
             IConfiguration configuration)
         {
             services.Configure<AzureOpenAISettings>(configuration.GetSection("AzureOpenAI"));
+            services.Configure<AiApiSettings>(configuration.GetSection("AiApi"));
 
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IUserService, UserService>();
@@ -25,7 +26,11 @@ namespace Chainly.Application.Extensions
             services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<ISalesDataService, SalesDataService>();
             services.AddScoped<IProductionLineService, ProductionLineService>();
-            services.AddScoped<IProductService, ProductService>();
+            
+            services.AddHttpClient();
+            services.AddScoped<IExternalApiService, ExternalApiService>();
+            services.AddScoped<IAiInsightsService, AiInsightsService>();
+            
             return services;
         }
     }
