@@ -36,7 +36,6 @@ namespace Chainly.Infrastructure.Extensions
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
 
-            // Email Configuration
             var emailConfig = configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
             if (emailConfig != null)
             {
@@ -44,7 +43,6 @@ namespace Chainly.Infrastructure.Extensions
                 services.AddTransient<IEmailSender, EmailSender>();
             }
 
-            // Security Configuration
             services.Configure<SecurityStampValidatorOptions>(options => 
             { 
                 options.ValidationInterval = TimeSpan.Zero; 

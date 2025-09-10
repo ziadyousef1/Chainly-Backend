@@ -19,4 +19,17 @@ public class ProductsController(IProductService productService) : BaseController
         int companyId = GetCompanyId();
         return await productService.GetTopProductsAsync(companyId, count);
     }
+
+    [HttpPost("import")]
+   // [Authorize(Permissions.Products.Create)]
+    public async Task<IActionResult> ImportProducts(IFormFile file , int companyId)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("Please select a valid Excel file.");
+
+        if (!file.FileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
+            return BadRequest("Only Excel files (.xlsx) are supported.");
+
+        return await productService.ImportProductsFromExcelAsync(file, companyId);
+    }
 }

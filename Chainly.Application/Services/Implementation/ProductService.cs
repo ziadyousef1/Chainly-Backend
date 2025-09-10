@@ -1,8 +1,11 @@
 using Chainly.Application.DTOs.Products;
 using Chainly.Application.Services.Interfaces;
 using Chainly.Data;
+using Chainly.Domain.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
 
 namespace Chainly.Application.Services.Implementation;
 
@@ -78,5 +81,100 @@ public class ProductService(AppDbContext context) : IProductService
             .ToListAsync();
 
         return new OkObjectResult(topProducts);
+    }
+
+    public async Task<IActionResult> ImportProductsFromExcelAsync(IFormFile file, int companyId)
+    {
+        ExcelPackage.License.SetNonCommercialPersonal("Product Import");
+        
+        var productsList = new List<ProductImportDto>();
+
+        using var stream = file.OpenReadStream();
+        using var package = new ExcelPackage(stream);
+        var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+        
+        if (worksheet == null)
+        {
+            return new BadRequestObjectResult("No worksheet found in the Excel file");
+        }
+
+        var rowCount = worksheet.Dimension?.Rows ?? 0;
+        
+        if (rowCount <= 1)
+        {
+            return new BadRequestObjectResult("Excel file is empty or has no data rows");
+        }
+
+        for (int row = 2; row <= rowCount; row++)
+        {
+            var idText = worksheet.Cells[row, 1].Text?.Trim();
+            var nameText = worksheet.Cells[row, 2].Text?.Trim();
+            var quantityText = worksheet.Cells[row, 3].Text?.Trim();
+
+            if (string.IsNullOrEmpty(idText) && string.IsNullOrEmpty(nameText))
+                continue;
+
+            if (!int.TryParse(idText, out var id) ||
+                string.IsNullOrEmpty(nameText) ||
+                !int.TryParse(quantityText, out var quantity))
+            {
+                return new BadRequestObjectResult($"Invalid data format in row {row}. Please check Id, Name, and quantity columns.");
+            }
+
+            var product = new ProductImportDto
+            {
+                Id = id,
+                Name = nameText,
+                Quantity = quantity,
+                CompanyId = companyId 
+            };
+
+            productsList.Add(product);
+        }
+
+        if (!productsList.Any())
+        {
+            return new BadRequestObjectResult("No valid product data found in the Excel file");
+        }
+
+        var productEntities = productsList.Select(dto => new Product
+        {
+            Id = dto.Id,
+            Name = dto.Name,
+            Stock = dto.Quantity, 
+            CompanyId = companyId 
+        }).ToList();
+
+        var existingProducts = await context.Products
+            .Where(p => p.CompanyId == companyId && productsList.Select(pl => pl.Id).Contains(p.Id))
+            .ToListAsync();
+
+        var existingProductIds = existingProducts.Select(p => p.Id).ToList();
+        var productsToUpdate = productEntities.Where(p => existingProductIds.Contains(p.Id)).ToList();
+        var productsToInsert = productEntities.Where(p => !existingProductIds.Contains(p.Id)).ToList();
+
+        foreach (var productToUpdate in productsToUpdate)
+        {
+            var existingProduct = existingProducts.First(p => p.Id == productToUpdate.Id);
+            existingProduct.Name = productToUpdate.Name;
+            existingProduct.Stock = productToUpdate.Stock;
+        }
+
+        if (productsToInsert.Any())
+        {
+            await context.Products.AddRangeAsync(productsToInsert);
+        }
+
+        var savedCount = await context.SaveChangesAsync();
+
+        var result = new
+        {
+            TotalProcessed = productsList.Count,
+            Updated = productsToUpdate.Count,
+            Inserted = productsToInsert.Count,
+            Message = $"Successfully processed {productsList.Count} products. {productsToUpdate.Count} updated, {productsToInsert.Count} inserted."
+        };
+
+        return new OkObjectResult(result);
     }
 }
