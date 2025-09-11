@@ -28,6 +28,7 @@ namespace Chainly.Application.Extensions
             services.AddScoped<IProductionLineService, ProductionLineService>();
             services.AddScoped<IProductService, ProductService>();
             services.AddScoped<IReportService, ReportService>();
+            services.AddScoped<ILoggingService, LoggingService>();
             
             services.AddHttpClient();
             services.AddScoped<IExternalApiService, ExternalApiService>();

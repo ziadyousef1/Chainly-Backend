@@ -5,3 +5,7 @@ obj/
 *.suo
 *.cache
 *.idea/
+logs/
+*.log
+*.txt
+Logs/
