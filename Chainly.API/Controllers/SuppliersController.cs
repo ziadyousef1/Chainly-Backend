@@ -14,24 +14,26 @@ public class SuppliersController(ISupplierService supplierService, ISupplierImpo
 {
     [HttpGet]
     [Authorize(Permissions.Suppliers.View)]
-    public async Task<IActionResult> GetAllSuppliers([FromQuery] int materialId, [FromQuery] int? pageNumber, [FromQuery] int? pageSize, [FromQuery] int? Quantity = 1,
+    public async Task<IActionResult> GetAllSuppliers([FromQuery] int pageNumber, [FromQuery] int pageSize,
         [FromQuery] string sortType = null)
     {
         int companyId = GetCompanyId();
-        return await supplierService.GetSuppliersAsync(companyId, materialId, Quantity, pageNumber, pageSize, sortType);
+        return await supplierService.GetSuppliersAsync(companyId, pageNumber, pageSize, sortType);
     }
 
     [HttpGet("{id}")]
     [Authorize(Permissions.Suppliers.View)]
-    public async Task<IActionResult> GetSupplier(int id, int materialId, int? quantity = 1)
+    public async Task<IActionResult> GetSupplier(int id, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null)
     {
         int companyId = GetCompanyId();
-        return await supplierService.GetSupplierAsync(id, companyId, materialId, quantity);
+        return await supplierService.GetSupplierAsync(id, companyId, pageNumber, pageSize, search);
     }
+
 
     [HttpPost]
     [Authorize(Permissions.Suppliers.Create)]
-    public async Task<IActionResult> CreateSupplier([FromBody] SupplierDto dto)
+    public async Task<IActionResult> CreateSupplier([FromBody] SupplierCreateDto dto)
     {
         int companyId = GetCompanyId();
         return await supplierService.CreateSupplierAsync(dto, companyId);
@@ -39,7 +41,7 @@ public class SuppliersController(ISupplierService supplierService, ISupplierImpo
 
     [HttpPut("{id}")]
     [Authorize(Permissions.Suppliers.Update)]
-    public async Task<IActionResult> UpdateSupplier(int id, [FromBody] SupplierDto dto)
+    public async Task<IActionResult> UpdateSupplier(int id, [FromBody] SupplierUpdateDto dto)
     {
         int companyId = GetCompanyId();
         return await supplierService.UpdateSupplierAsync(id, dto, companyId);
