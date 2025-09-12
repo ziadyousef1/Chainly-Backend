@@ -1,189 +1,156 @@
-﻿using Chainly.Application.DTOs;
+﻿using Chainly.Application.DTOs.Materials;
 using Chainly.Application.DTOs.Suppliers;
 using Chainly.Application.Services.Interfaces;
 using Chainly.Data;
 using Chainly.Domain.Models;
+using Chainly.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using static Chainly.Domain.Constants.Permissions;
 
 namespace Chainly.Application.Services.Implementation;
 
 public class SupplierService(AppDbContext context, ISupplierImportService supplierImportService)
     : ISupplierService
 {
-    public async Task<IActionResult> GetSuppliersAsync(int companyId, int? materialId, int? pageNumber, int? pageSize, int? Quantity = 1 , string? sortType = null)
+    public async Task<IActionResult> GetSuppliersAsync(int companyId, int pageNumber = 1, int pageSize = 10,
+        string? sortType = null)
     {
+        if (pageNumber <= 0) pageNumber = 1;
+        if (pageSize <= 0) pageSize = 10;
+
         var company = await context.Companies.FindAsync(companyId);
         if (company == null)
-            return new NotFoundObjectResult($"Company {companyId} not found");
+            return new NotFoundObjectResult("Company not found.");
 
-        IQueryable<Supplier> query = context.Suppliers
-        .Where(s => s.CompanyId == null || s.CompanyId == company.Id)
-        .Include(s => s.SupplierMaterials)
-        .ThenInclude(sm => sm.Material);
+        var supplierEntities = await context.Suppliers
+            .Where(s => s.CompanyId == null || s.CompanyId == company.Id)
+            .ToListAsync();
 
-        
-        if (!string.IsNullOrEmpty(sortType) && sortType.ToLower() == "carbon")
-        {
-            if (!materialId.HasValue)
-                return new BadRequestObjectResult("materialId is required for carbon sorting.");
-
-            query = query.Where(s => s.SupplierMaterials.Any(sm => sm.MaterialId == materialId.Value));
-        }
-
-        var supplierEntities = await query.ToListAsync();
-
-        var suppliers = supplierEntities.Select(s =>
-        {
-            var distance = CalculateDistance(
-                company.LocationLatitude,
-                company.LocationLongitude,
-                s.LocationLatitude,
-                s.LocationLongitude);
-
-            if (string.IsNullOrEmpty(sortType)) 
+        var suppliers = supplierEntities
+            .Select(s => new
             {
-                return new SupplierDto
-                {
-                    Id = s.Id,
-                    Name = s.Name,
-                    Latitude = s.LocationLatitude,
-                    Longitude = s.LocationLongitude,
-                    CompanyId = s.CompanyId,
-                    FacilityType = s.FacilityType,
-                    Sector = s.Sector,
-                    Distance = distance
-                };
-            }
+                s.Id,
+                s.Name,
+                NumericDistance = LocationHelper.CalculateDistance(
+                    company.LocationLatitude,
+                    company.LocationLongitude,
+                    s.LocationLatitude,
+                    s.LocationLongitude)
+            })
+            .ToList();
 
-            
-            var supplierMaterial = materialId.HasValue
-                ? s.SupplierMaterials.FirstOrDefault(sm => sm.MaterialId == materialId.Value)
-                : null;
-
-            decimal? totalCarbon = null;
-            string carbonUnit = null;
-
-            if (supplierMaterial != null)
-            {
-                totalCarbon = distance * supplierMaterial.Material.EmissionValue * (Quantity ?? 1);
-                carbonUnit = $"Kg CO2e/{supplierMaterial.Material.Unit}";
-            }
-
-            return new SupplierDto
-            {
-                Id = s.Id,
-                Name = s.Name,
-                Latitude = s.LocationLatitude,
-                Longitude = s.LocationLongitude,
-                CompanyId = s.CompanyId,
-                FacilityType = s.FacilityType,
-                Sector = s.Sector,
-                Distance = distance,
-                TotalCarbon = totalCarbon,
-                CarbonUnit = carbonUnit
-            };
-        });
-
-        
-        if (!string.IsNullOrEmpty(sortType))
+        if (!string.IsNullOrWhiteSpace(sortType))
         {
             suppliers = sortType.ToLower() switch
             {
-                "carbon" => suppliers.OrderBy(s => s.TotalCarbon).ThenBy(s => s.Distance),
-                "distance" => suppliers.OrderBy(s => s.Distance).ThenBy(s => s.TotalCarbon ?? decimal.MaxValue),
+                "asc" => suppliers.OrderBy(s => s.NumericDistance).ToList(),
+                "desc" => suppliers.OrderByDescending(s => s.NumericDistance).ToList(),
                 _ => suppliers
             };
         }
 
-        var totalCount = suppliers.Count();
+        var totalCount = suppliers.Count;
 
-        if (pageNumber.HasValue && pageSize.HasValue && pageNumber > 0 && pageSize > 0)
+        suppliers = suppliers
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        var supplierDtos = suppliers.Select(s => new
         {
-            suppliers = suppliers
-                .Skip((pageNumber.Value - 1) * pageSize.Value)
-                .Take(pageSize.Value)
-                .ToList();
+            s.Id,
+            s.Name,
+            Distance = $"{Math.Round(s.NumericDistance, 2)} Km"
+        });
 
-            return new OkObjectResult(new PagedResult<SupplierDto>
-            {
-                Items = suppliers,
-                TotalCount = totalCount,
-                PageNumber = pageNumber.Value,
-                PageSize = pageSize.Value
-            });
-        }
-
-        return new OkObjectResult(new PagedResult<SupplierDto>
+        return new OkObjectResult(new
         {
-            Items = suppliers,
-            TotalCount = totalCount
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+            Items = supplierDtos
         });
     }
 
-    public async Task<IActionResult> GetSupplierAsync(int id, int companyId , int? materialId , int? quantity = 1)
+    public async Task<IActionResult> GetSupplierAsync(int id, int companyId, int pageNumber = 1, int pageSize = 10,
+        string? search = null)
     {
+        if (pageNumber <= 0) pageNumber = 1;
+        if (pageSize <= 0) pageSize = 10;
+
         var supplier = await context.Suppliers
-        .Include(s => s.SupplierMaterials)
-        .ThenInclude(sm => sm.Material)
-        .FirstOrDefaultAsync(s => s.Id == id && (s.CompanyId == companyId || s.CompanyId == null));
+            .Include(s => s.SupplierMaterials)
+            .ThenInclude(sm => sm.Material)
+            .FirstOrDefaultAsync(s => s.Id == id && (s.CompanyId == companyId || s.CompanyId == null));
 
         if (supplier == null)
-            return new NotFoundObjectResult($"Supplier {id} not found");
+            return new NotFoundObjectResult("Supplier not found.");
 
         var company = await context.Companies.FindAsync(companyId);
         if (company == null)
-            return new NotFoundObjectResult($"Company {companyId} not found");
+            return new NotFoundObjectResult("Company not found.");
 
-        var distance = CalculateDistance(
+        var numericDistance = LocationHelper.CalculateDistance(
             company.LocationLatitude,
             company.LocationLongitude,
             supplier.LocationLatitude,
             supplier.LocationLongitude);
 
+        var supplierMaterials = supplier.SupplierMaterials.AsQueryable();
 
-        decimal? totalCarbon = null;
-        string carbonUnit = null;
-
-        
-        if (materialId.HasValue)
+        if (!string.IsNullOrWhiteSpace(search))
         {
-            var supplierMaterial = supplier.SupplierMaterials
-                .FirstOrDefault(sm => sm.MaterialId == materialId.Value);
-
-            if (supplierMaterial != null)
-            {
-                totalCarbon = distance * supplierMaterial.Material.EmissionValue * (quantity ?? 1);
-                carbonUnit = $"Kg CO2e/{supplierMaterial.Material.Unit}";
-            }
+            string term = search.Trim().ToLower();
+            supplierMaterials = supplierMaterials
+                .Where(sm => sm.Material.Name.ToLower().Contains(term));
         }
 
-        var dto = new SupplierDto
+        var totalMaterials = supplierMaterials.Count();
+
+        var pagedMaterials = supplierMaterials
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Select(sm => new MaterialDto
+            {
+                Id = sm.Material.Id,
+                Name = sm.Material.Name,
+                CarbonFootprint = $"{sm.Material.EmissionValue} CO2e/{sm.Material.Unit}"
+            })
+            .ToList();
+
+        var result = new
         {
-            Id = supplier.Id,
-            Name = supplier.Name,
-            Latitude = supplier.LocationLatitude,
-            Longitude = supplier.LocationLongitude,
-            CompanyId = supplier.CompanyId,
-            FacilityType = supplier.FacilityType,
-            Sector = supplier.Sector,
-            Distance = distance,
-            TotalCarbon = totalCarbon,
-            CarbonUnit = carbonUnit
+            Supplier = new SupplierDto
+            {
+                Id = supplier.Id,
+                Name = supplier.Name,
+                FacilityType = supplier.FacilityType,
+                Sector = supplier.Sector,
+                Latitude = supplier.LocationLatitude,
+                Longitude = supplier.LocationLongitude,
+                Distance = $"{Math.Round(numericDistance, 2)} Km"
+            },
+            Materials = new
+            {
+                TotalCount = totalMaterials,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling(totalMaterials / (double)pageSize),
+                Items = pagedMaterials
+            }
         };
 
-
-        return new OkObjectResult(dto);
-     
+        return new OkObjectResult(result);
     }
 
-    public async Task<IActionResult> CreateSupplierAsync(SupplierDto dto, int companyId)
+
+    public async Task<IActionResult> CreateSupplierAsync(SupplierCreateDto dto, int companyId)
     {
         var company = await context.Companies.FindAsync(companyId);
         if (company == null)
-            return new NotFoundObjectResult($"Company {companyId} not found");
+            return new NotFoundObjectResult("Company not found.");
 
         var supplier = new Supplier
         {
@@ -198,14 +165,33 @@ public class SupplierService(AppDbContext context, ISupplierImportService suppli
         context.Suppliers.Add(supplier);
         await context.SaveChangesAsync();
 
-        return new OkObjectResult(new { Message = "Supplier created successfully", SupplierId = supplier.Id });
+        if (dto.MaterialIds != null && dto.MaterialIds.Any())
+        {
+            var supplierMaterials = dto.MaterialIds.Select(materialId => new SupplierMaterial
+            {
+                SupplierId = supplier.Id,
+                MaterialId = materialId
+            });
+
+            context.SupplierMaterials.AddRange(supplierMaterials);
+            await context.SaveChangesAsync();
+        }
+
+        return new OkObjectResult(new
+        {
+            Message = "Supplier created successfully",
+            SupplierId = supplier.Id,
+        });
     }
 
-    public async Task<IActionResult> UpdateSupplierAsync(int id, SupplierDto dto, int companyId)
+    public async Task<IActionResult> UpdateSupplierAsync(int id, SupplierUpdateDto dto, int companyId)
     {
-        var supplier = await context.Suppliers.FindAsync(id);
-        if (supplier == null || supplier.CompanyId != companyId)
-            return new NotFoundObjectResult($"Supplier {id} not found");
+        var supplier = await context.Suppliers
+            .Include(s => s.SupplierMaterials)
+            .FirstOrDefaultAsync(s => s.Id == id && (s.CompanyId == companyId || s.CompanyId == null));
+
+        if (supplier == null)
+            return new NotFoundObjectResult("Supplier not found.");
 
         supplier.Name = dto.Name;
         supplier.LocationLatitude = dto.Latitude;
@@ -213,39 +199,39 @@ public class SupplierService(AppDbContext context, ISupplierImportService suppli
         supplier.FacilityType = string.IsNullOrWhiteSpace(dto.FacilityType) ? supplier.FacilityType : dto.FacilityType;
         supplier.Sector = string.IsNullOrWhiteSpace(dto.Sector) ? supplier.Sector : dto.Sector;
 
-        context.Suppliers.Update(supplier);
+        if (dto.MaterialIds != null)
+        {
+            context.SupplierMaterials.RemoveRange(supplier.SupplierMaterials);
+
+            var newLinks = dto.MaterialIds.Select(materialId => new SupplierMaterial
+            {
+                SupplierId = id,
+                MaterialId = materialId
+            }).ToList();
+
+            await context.SupplierMaterials.AddRangeAsync(newLinks);
+        }
+
         await context.SaveChangesAsync();
 
-        return new OkObjectResult("Supplier updated successfully");
+        return new OkObjectResult(new
+        {
+            Message = "Supplier updated successfully",
+            SupplierId = supplier.Id,
+        });
     }
 
     public async Task<IActionResult> DeleteSupplierAsync(int id, int companyId)
     {
         var supplier = await context.Suppliers.FindAsync(id);
         if (supplier == null || supplier.CompanyId != companyId)
-            return new NotFoundObjectResult($"Supplier {id} not found");
+            return new NotFoundObjectResult("Supplier not found");
 
         context.Suppliers.Remove(supplier);
         await context.SaveChangesAsync();
 
         return new OkObjectResult("Supplier deleted successfully");
     }
-
-    private static decimal CalculateDistance(decimal lat1, decimal lon1, decimal lat2, decimal lon2)
-    {
-        const double R = 6371; // Radius of the Earth in km
-        var dLat = (double)(lat2 - lat1) * Math.PI / 180.0;
-        var dLon = (double)(lon2 - lon1) * Math.PI / 180.0;
-
-        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
-                Math.Cos((double)lat1 * Math.PI / 180.0) *
-                Math.Cos((double)lat2 * Math.PI / 180.0) *
-                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
-
-        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-        return (decimal)(R * c);
-    }
-
 
     public async Task<IActionResult> ImportSuppliersAsync(IFormFile file, int? companyId = null)
     {
