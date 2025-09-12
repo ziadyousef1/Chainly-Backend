@@ -59,19 +59,24 @@ namespace Chainly.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             builder.Entity<Order>()
-                .HasKey(o => new { o.OrderId, o.CompanyId });
+                .HasIndex(o => new { OrderId = o.CompanyOrderId, o.CompanyId })
+                .IsUnique();
+            builder.Entity<Order>()
+                .HasKey(o => o.Id);
 
             builder.Entity<OrderTracking>()
                 .HasOne(ot => ot.Order)
                 .WithMany(o => o.Trackings)
-                .HasForeignKey(ot => new { ot.OrderId, ot.CompanyId });
+                .HasForeignKey(ot => ot.OrderId);
 
             builder.Entity<OrderTracking>()
                 .HasOne(ot => ot.UpdatedByNavigation)
                 .WithMany()
                 .HasForeignKey(ot => ot.UpdatedBy)
                 .OnDelete(DeleteBehavior.Restrict);
-
+            builder.Entity<OrderTracking>()
+                .Property(ot => ot.Id)
+                .ValueGeneratedOnAdd();
             builder.Entity<Role>()
                 .HasIndex(r => new { r.Name, r.CompanyId })
                 .IsUnique();

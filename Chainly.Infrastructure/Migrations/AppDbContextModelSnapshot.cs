@@ -103,15 +103,21 @@ namespace Chainly.Data.Migrations
 
             modelBuilder.Entity("Chainly.Domain.Models.Order", b =>
                 {
-                    b.Property<int>("OrderId")
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<int>("CompanyId")
-                        .HasColumnType("int");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CompanyOrderId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Email")
                         .HasColumnType("nvarchar(max)");
@@ -119,9 +125,12 @@ namespace Chainly.Data.Migrations
                     b.Property<string>("Phone")
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("OrderId", "CompanyId");
+                    b.HasKey("Id");
 
                     b.HasIndex("CompanyId");
+
+                    b.HasIndex("CompanyOrderId", "CompanyId")
+                        .IsUnique();
 
                     b.ToTable("Orders");
                 });
@@ -143,12 +152,15 @@ namespace Chainly.Data.Migrations
                     b.Property<double>("Longitude")
                         .HasColumnType("float");
 
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("OrderId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("datetime2");
@@ -158,9 +170,9 @@ namespace Chainly.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UpdatedBy");
+                    b.HasIndex("OrderId");
 
-                    b.HasIndex("OrderId", "CompanyId");
+                    b.HasIndex("UpdatedBy");
 
                     b.ToTable("OrderTracking");
                 });
@@ -635,16 +647,16 @@ namespace Chainly.Data.Migrations
 
             modelBuilder.Entity("Chainly.Domain.Models.OrderTracking", b =>
                 {
+                    b.HasOne("Chainly.Domain.Models.Order", "Order")
+                        .WithMany("Trackings")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("Chainly.Domain.Models.User", "UpdatedByNavigation")
                         .WithMany()
                         .HasForeignKey("UpdatedBy")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Chainly.Domain.Models.Order", "Order")
-                        .WithMany("Trackings")
-                        .HasForeignKey("OrderId", "CompanyId")
-                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Order");

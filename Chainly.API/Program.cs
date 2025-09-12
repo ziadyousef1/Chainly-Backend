@@ -4,36 +4,20 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.UseSerilog((context, configuration) =>
-{
-    configuration.ReadFrom.Configuration(context.Configuration);
-});
 
-try
-{
-    Log.Information("Starting Chainly API");
 
     builder.Services.AddControllers();
     builder.Services.AddOpenApi();
 
-
     builder.Services.AddInfrastructureServices(builder.Configuration);
-
-
     builder.Services.AddApplicationServices(builder.Configuration);
-
-
     builder.Services.AddAuthorizationServices();
-
-
     builder.Services.AddJwtAuthentication(builder.Configuration);
-
 
     var app = builder.Build();
     await DBInitializer.SeedAsync(app.Services);
 
     app.UseGlobalExceptionHandling();
-
     app.UseHttpsRedirection();
     app.UseAuthentication();
     app.UseAuthorization();
@@ -42,12 +26,4 @@ try
     app.MapScalarApiReference(options => { options.Theme = ScalarTheme.Mars; });
 
     app.Run();
-}
-catch (Exception ex)
-{
-    Log.Fatal(ex, "Application terminated unexpectedly");
-}
-finally
-{
-    Log.CloseAndFlush();
-}
+

@@ -79,6 +79,15 @@ public static class Permissions
         public const string Create = "Products.Create";
         public const string Update = "Products.Update";
         public const string Delete = "Products.Delete";
-        public const string Import = "Suppliers.Import";
+        public const string Import = "Products.Import";
+    }
+
+    public static class Orders
+    {
+        public const string View = "Orders.View";
+        public const string Create = "Orders.Create";
+        public const string Update = "Orders.Update";
+        public const string Delete = "Orders.Delete";
+        public const string Import = "Orders.Import";
     }
 }
