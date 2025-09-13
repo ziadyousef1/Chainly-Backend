@@ -37,4 +37,18 @@ public class PredictionsController : Controller
 
         return File(videoContent, contentType, fileName);
     }
+    [HttpGet("processing-status/{sessionId}")]
+    public async Task<IActionResult> CheckProcessingStatus(string sessionId)
+    {
+        using var client = new HttpClient();
+        var request = new HttpRequestMessage(HttpMethod.Get, $"http://20.51.117.96:8000/processing-status/{sessionId}");
+        var response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+
+        var statusContent = await response.Content.ReadAsStringAsync();
+        Console.WriteLine(statusContent);
+
+        return Ok(statusContent);
+    }
+    
 }
