@@ -30,7 +30,7 @@ public class ReportService(AppDbContext context) : IReportService
             VideoName = sessionDto.VideoName,
         };
 
-        context.Reports.Add(report);
+        await context.Reports.AddAsync(report);
         await context.SaveChangesAsync();
 
 
@@ -45,7 +45,11 @@ public class ReportService(AppDbContext context) : IReportService
         context.DefectiveProducts.AddRange(defective);
         await context.SaveChangesAsync();
 
-        return new OkObjectResult(new { message = "Report stored successfully." });
+        return new OkObjectResult(new
+        {
+            message = "Report stored successfully.",
+            reportId = report.Id
+        });
     }
 
     public async Task<IActionResult> GetAllReportsAsync(int companyId, int pageNumber = 1, int pageSize = 10,
