@@ -119,10 +119,10 @@ public class OrderService : IOrderService
     var totalCount = await query.CountAsync();
 
     var orders = await query
-        .OrderBy(o => o.CompanyOrderId)
+        .OrderBy(o => o.CompanyOrderId).Include(o => o.Trackings)
         .Skip((pageNumber - 1) * pageSize)
         .Take(pageSize)
-        .Select(o => new { OrderId = o.CompanyOrderId, o.Code })
+        .Select(o => new { OrderId = o.CompanyOrderId, o.Code , Trackings = o.Trackings.Select(t => new { t.Status, t.Timestamp }) })
         .ToListAsync();
 
     var response = new
@@ -139,7 +139,32 @@ public class OrderService : IOrderService
 
     public async Task<IActionResult> GetOrderTrackingByIdAsync(int orderId,int companyId)
     {
-        throw new NotImplementedException();
+        var order = await _dbContext.Orders
+            .Include(o => o.Trackings)
+            .ThenInclude(t => t.UpdatedByNavigation) 
+            .Where(o => o.CompanyOrderId == orderId && o.CompanyId == companyId)
+            .Select(o => new
+            {
+                o.CompanyOrderId,
+                o.Code,
+                Trackings = o.Trackings
+                    .OrderByDescending(t => t.Timestamp)
+                    .Select(t => new
+                    {
+                        t.Status,
+                        t.Notes,
+                        t.Timestamp,
+                        UpdatedBy = new { t.UpdatedByNavigation.Id, t.UpdatedByNavigation.FullName }
+                    })
+            })
+            .FirstOrDefaultAsync();
+
+        if (order == null)
+        {
+            return new NotFoundObjectResult("Order not found.");
+        }
+
+        return new OkObjectResult(order);
     }
 
     public async Task<IActionResult> CreateOrderAsync(OrderTrackingDto orderTrackingDto,int companyId,int UpdatedBy)

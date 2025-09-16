@@ -60,6 +60,13 @@ public class OrdersController : BaseController
 
             return await _orderService.CreateOrderAsync(orderTrackingDto, companyId, updatedBy);
         }
+        [HttpGet("{orderId}/tracking")]
+        public async Task<IActionResult> GetOrderTrackingByIdAsync(int orderId)
+        {
+            var companyId = GetCompanyId();
+            var result = await _orderService.GetOrderTrackingByIdAsync(orderId, companyId);
+            return result;
+        }
 
         [HttpGet("summary")]
         public async Task<IActionResult> GetOrdersSummary()

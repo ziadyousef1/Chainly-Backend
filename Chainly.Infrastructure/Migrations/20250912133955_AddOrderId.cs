@@ -17,7 +17,7 @@ namespace Chainly.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"), // IDENTITY column
+                        .Annotation("SqlServer:Identity", "1, 1"), 
                     OrderId = table.Column<int>(type: "int", nullable: false),
                     CompanyId = table.Column<int>(type: "int", nullable: false),
                     Latitude = table.Column<double>(type: "float", nullable: false),

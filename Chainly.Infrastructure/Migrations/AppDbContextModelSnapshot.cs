@@ -45,7 +45,7 @@ namespace Chainly.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Companies");
+                    b.ToTable("Companies", (string)null);
                 });
 
             modelBuilder.Entity("Chainly.Domain.Models.DefectiveProduct", b =>
@@ -74,7 +74,7 @@ namespace Chainly.Data.Migrations
 
                     b.HasIndex("ReportId");
 
-                    b.ToTable("DefectiveProducts");
+                    b.ToTable("DefectiveProducts", (string)null);
                 });
 
             modelBuilder.Entity("Chainly.Domain.Models.Material", b =>
@@ -98,7 +98,7 @@ namespace Chainly.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Materials");
+                    b.ToTable("Materials", (string)null);
                 });
 
             modelBuilder.Entity("Chainly.Domain.Models.Order", b =>
@@ -132,7 +132,7 @@ namespace Chainly.Data.Migrations
                     b.HasIndex("CompanyOrderId", "CompanyId")
                         .IsUnique();
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", (string)null);
                 });
 
             modelBuilder.Entity("Chainly.Domain.Models.OrderTracking", b =>
@@ -174,7 +174,7 @@ namespace Chainly.Data.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("OrderTracking");
+                    b.ToTable("OrderTracking", (string)null);
                 });
 
             modelBuilder.Entity("Chainly.Domain.Models.Product", b =>
@@ -196,7 +196,7 @@ namespace Chainly.Data.Migrations
 
                     b.HasIndex("CompanyId");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("Chainly.Domain.Models.ProductionLine", b =>
@@ -221,7 +221,7 @@ namespace Chainly.Data.Migrations
 
                     b.HasIndex("CompanyId");
 
-                    b.ToTable("ProductionLines");
+                    b.ToTable("ProductionLines", (string)null);
                 });
 
             modelBuilder.Entity("Chainly.Domain.Models.Report", b =>
@@ -252,7 +252,7 @@ namespace Chainly.Data.Migrations
 
                     b.HasIndex("ProductionLineId");
 
-                    b.ToTable("Reports");
+                    b.ToTable("Reports", (string)null);
                 });
 
             modelBuilder.Entity("Chainly.Domain.Models.Role", b =>
@@ -380,7 +380,7 @@ namespace Chainly.Data.Migrations
                     b.HasIndex("CityId", "StoreId", "ProductId", "Dt")
                         .IsUnique();
 
-                    b.ToTable("SalesData");
+                    b.ToTable("SalesData", (string)null);
                 });
 
             modelBuilder.Entity("Chainly.Domain.Models.Supplier", b =>
@@ -416,7 +416,7 @@ namespace Chainly.Data.Migrations
 
                     b.HasIndex("CompanyId");
 
-                    b.ToTable("Suppliers");
+                    b.ToTable("Suppliers", (string)null);
                 });
 
             modelBuilder.Entity("Chainly.Domain.Models.SupplierMaterial", b =>
@@ -431,7 +431,7 @@ namespace Chainly.Data.Migrations
 
                     b.HasIndex("MaterialId");
 
-                    b.ToTable("SupplierMaterials");
+                    b.ToTable("SupplierMaterials", (string)null);
                 });
 
             modelBuilder.Entity("Chainly.Domain.Models.User", b =>
