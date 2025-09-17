@@ -59,8 +59,7 @@ public class ReportService(AppDbContext context) : IReportService
         if (pageSize <= 0) pageSize = 10;
 
         var query = context.Reports
-            .Where(r => r.ProductionLine.CompanyId == companyId)
-            .AsQueryable();
+            .Where(r => r.ProductionLine.CompanyId == companyId);
 
         if (startDate.HasValue)
             query = query.Where(r => r.ReportDate.Date >= startDate.Value.Date);
@@ -71,6 +70,7 @@ public class ReportService(AppDbContext context) : IReportService
         var totalCount = await query.CountAsync();
 
         var reports = await query
+            .OrderByDescending(r => r.ReportDate)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .Select(r => new
