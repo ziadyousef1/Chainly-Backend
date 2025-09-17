@@ -6,8 +6,6 @@ public class ReportSummaryDto
     public int TotalProducts { get; set; }
     public int DefectiveProductsCount { get; set; }
     public int NonDefectiveProductsCount { get; set; }
-    public int TotalDefectiveItems { get; set; }
-
     public int PageNumber { get; set; }
     public int PageSize { get; set; }
     public int TotalPages { get; set; }
