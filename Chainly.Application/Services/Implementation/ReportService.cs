@@ -1,9 +1,11 @@
+using System.Globalization;
 using Chainly.Application.DTOs;
 using Chainly.Application.DTOs.ProductionLines;
 using Chainly.Application.DTOs.Reports;
 using Chainly.Application.Services.Interfaces;
 using Chainly.Data;
 using Chainly.Domain.Models;
+using Chainly.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using DefectiveProductDto = Chainly.Application.DTOs.DefectiveProductDto;
@@ -169,10 +171,10 @@ public class ReportService(AppDbContext context) : IReportService
             query = query.Where(r => r.ProductionLineId == productionLineId.Value);
 
         if (startDate.HasValue)
-            query = query.Where(r => r.ReportDate.Date >= startDate.Value.Date);
+            query = query.Where(r => r.ReportDate.Date.Day >= startDate.Value.Date.Day);
 
         if (endDate.HasValue)
-            query = query.Where(r => r.ReportDate.Date <= endDate.Value.Date);
+            query = query.Where(r => r.ReportDate.Date.Day <= endDate.Value.Date.Day);
 
         var reports = await query.ToListAsync();
 
@@ -184,16 +186,15 @@ public class ReportService(AppDbContext context) : IReportService
             .Select(d => new DefectiveProductReportDto()
             {
                 Id = d.ProductId,
-                DetectedAt = d.Time.ToString("o")
+                DetectedAt = d.Time.ToAppFormat()
             }).ToList();
 
         var summary = new ReportSummaryDto
         {
             ProductionLineId = productionLineId ?? 0,
             TotalProducts = reports.Sum(r => r.TotalProducts),
-            DefectiveProductsCount = reports.Sum(r => r.DefectiveProductsCount),
+            DefectiveProductsCount = totalDefectiveProducts,
             NonDefectiveProductsCount = reports.Sum(r => r.GoodProducts),
-            TotalDefectiveItems = totalDefectiveProducts,
             PageNumber = pageNumber,
             PageSize = pageSize,
             TotalPages = (int)Math.Ceiling((double)totalDefectiveProducts / pageSize),
