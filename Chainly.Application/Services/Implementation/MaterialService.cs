@@ -76,9 +76,7 @@ public class MaterialService(AppDbContext context) : IMaterialService
         var material = await context.Materials
             .Include(m => m.SupplierMaterials)
             .ThenInclude(sm => sm.Supplier)
-            .FirstOrDefaultAsync(m => m.Id == id &&
-                                      m.SupplierMaterials.Any(sm =>
-                                          sm.Supplier.CompanyId == companyId || sm.Supplier.CompanyId == null));
+            .FirstOrDefaultAsync(m => m.Id == id);
 
         if (material is null)
             return new NotFoundObjectResult(new { message = "Material not found" });
