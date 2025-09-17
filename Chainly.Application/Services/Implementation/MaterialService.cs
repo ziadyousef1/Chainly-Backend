@@ -35,7 +35,7 @@ public class MaterialService(AppDbContext context) : IMaterialService
             {
                 "desc" => query.OrderByDescending(m => m.EmissionValue),
                 "asc" => query.OrderBy(m => m.EmissionValue),
-                _ => query
+                _ => query.OrderBy(m => m.Name)
             };
         }
 
