@@ -5,6 +5,7 @@ namespace Chainly.Application.DTOs.Orders;
 
 public class OrderTrackingDetailsDto
 {
+    public int Id { get; set; }
     public OrderStatus Status { get; set; }
     public string Notes { get; set; }
     public string Location { get; set; }
@@ -24,6 +25,8 @@ public class UpdatedByDto
 
 public class OrderDto
 {
+    public int Id { get; set; }
+    public int CompanyOrderId { get; set; }
     public string Code { get; set; }
     public List<OrderTrackingDetailsDto> Trackings { get; set; }
 }

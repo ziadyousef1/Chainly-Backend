@@ -111,7 +111,8 @@ public class OrderService : IOrderService
 
         return new OkObjectResult(result);
     }
-    public async Task<IActionResult> GetPagedOrdersAsync(int companyId, int pageNumber = 1, int pageSize = 10, OrderStatus? status = null)
+    public async Task<IActionResult> GetPagedOrdersAsync(int companyId, int pageNumber = 1, int pageSize = 10, OrderStatus? status = null
+        , string? searchTerm = null)
     {
         if (pageNumber <= 0) pageNumber = 1;
         if (pageSize <= 0) pageSize = 10;
@@ -124,6 +125,13 @@ public class OrderService : IOrderService
             query = query.Where(o => o.Trackings.Any(t => t.Status == status.Value));
         }
 
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(o =>
+                o.CompanyOrderId.ToString().Contains(searchTerm) ||
+                o.Code.Contains(searchTerm));
+        }
+
         var totalCount = await query.CountAsync();
 
         var orders = await query
@@ -133,6 +141,7 @@ public class OrderService : IOrderService
             .Take(pageSize)
             .Select(o => new
             {
+                Id = o.Id,
                 OrderId = o.CompanyOrderId,
                 o.Code,
                 LastStatus = o.Trackings
@@ -162,11 +171,14 @@ public class OrderService : IOrderService
             .Where(o => o.CompanyOrderId == orderId && o.CompanyId == companyId)
             .Select(o => new OrderDto
             {
+                Id = o.Id,
+                CompanyOrderId = o.CompanyOrderId,
                 Code = o.Code,
                 Trackings = o.Trackings
                     .OrderByDescending(t => t.Timestamp)
                     .Select(t => new OrderTrackingDetailsDto()
                     {
+                        Id = t.Id,
                         Status = t.Status,
                         Notes = t.Notes,
                         Timestamp = t.Timestamp,
@@ -202,6 +214,36 @@ public class OrderService : IOrderService
 
         return new OkObjectResult(order);
     }
+    public async Task<ServiceResponse> UpdateOrderAsync(int orderId, UpdateOrderDto dto)
+    {
+        var order = await _dbContext.Orders.FirstOrDefaultAsync(o => o.CompanyOrderId == orderId);
+        if (order == null)
+            return new ServiceResponse("Order not found.", false);
+
+        order.Code = dto.Code;
+        order.Phone = dto.Phone;
+        order.Email = dto.Email;
+
+        await _dbContext.SaveChangesAsync();
+        return new ServiceResponse("Order updated successfully.", true);
+    }
+    public async Task<ServiceResponse> UpdateOrderTrackingAsync(int trackingId, UpdateOrderTrackingDto dto)
+    {
+        var tracking = await _dbContext.OrderTracking.FindAsync(trackingId);
+        if (tracking == null)
+            return new ServiceResponse("Order tracking not found.", false);
+
+        tracking.Latitude = dto.Latitude;
+        tracking.Longitude = dto.Longitude;
+        tracking.Status = dto.Status;
+        tracking.Notes = dto.Notes;
+        tracking.Timestamp = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync();
+        return new ServiceResponse("Order tracking updated successfully.", true);
+    }
+
+
     private async Task<string> GetLocationAsync(double latitude, double longitude)
     {
         var url = $"https://api.geoapify.com/v1/geocode/reverse?lat={latitude}&lon={longitude}&apiKey=0e99ae334bed4b85b7f75ff56a8d1226";
