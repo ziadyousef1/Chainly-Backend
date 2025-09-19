@@ -4,6 +4,7 @@ using Chainly.Application.Services.Interfaces;
 using Chainly.Data;
 using Chainly.Domain.Constants;
 using Chainly.Domain.Models;
+using Chainly.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -146,8 +147,8 @@ public class OrderService : IOrderService
                 o.Code,
                 LastStatus = o.Trackings
                     .OrderByDescending(t => t.Timestamp)
-                    .Select(t => t.Status)
-                    .FirstOrDefault()
+                    .Select(t => t.Status.ToString())
+                    .FirstOrDefault() ?? OrderStatus.Pending.ToString(),
             })
             .ToListAsync();
 
@@ -179,16 +180,16 @@ public class OrderService : IOrderService
                     .Select(t => new OrderTrackingDetailsDto()
                     {
                         Id = t.Id,
-                        Status = t.Status,
+                        Status = t.Status.ToString(),
                         Notes = t.Notes,
-                        Timestamp = t.Timestamp,
+                        Timestamp = t.Timestamp.ToAppFormat(),
+                        Latitude = t.Latitude,
+                        Longitude = t.Longitude,
                         UpdatedBy = new UpdatedByDto
                         {
                             Id = t.UpdatedByNavigation.Id,
                             FullName = t.UpdatedByNavigation.FullName
-                        },
-                      Latitude = t.Latitude,
-                      Longitude = t.Longitude
+                        }
                     })
                     .ToList()
             })

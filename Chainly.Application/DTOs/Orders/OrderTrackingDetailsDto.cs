@@ -6,14 +6,14 @@ namespace Chainly.Application.DTOs.Orders;
 public class OrderTrackingDetailsDto
 {
     public int Id { get; set; }
-    public OrderStatus Status { get; set; }
+    public string Status { get; set; }
     public string Notes { get; set; }
     public string Location { get; set; }
-    [JsonIgnore]
+    
     public double Longitude { get; set; }
-    [JsonIgnore]
+    
     public double Latitude { get; set; }
-    public DateTime Timestamp { get; set; }
+    public string Timestamp { get; set; }
     public UpdatedByDto UpdatedBy { get; set; }
 }
 
