@@ -2,6 +2,7 @@
 using Chainly.Application.DTOs.Orders;
 using Chainly.Application.Services.Interfaces;
 using Chainly.Domain.Constants;
+using Chainly.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,6 +27,7 @@ public class OrdersController : BaseController
         {
             return NotFound(response.Message);
         }
+
         return Ok(response.Message);
     }
 
@@ -43,11 +45,13 @@ public class OrdersController : BaseController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetOrders(int pageNumber = 1, int pageSize = 10, OrderStatus? status = null, string? search = null)
+    public async Task<IActionResult> GetOrders(int pageNumber = 1, int pageSize = 10, OrderStatus? status = null,
+        string? search = null)
     {
         var companyId = GetCompanyId();
         return await _orderService.GetPagedOrdersAsync(companyId, pageNumber, pageSize, status, search);
     }
+
     [HttpPost("create-order-tracking")]
     public async Task<IActionResult> CreateOrderTracking([FromBody] OrderTrackingDto orderTrackingDto)
     {
@@ -61,6 +65,7 @@ public class OrdersController : BaseController
 
         return await _orderService.CreateOrderAsync(orderTrackingDto, companyId, updatedBy);
     }
+
     [HttpGet("{orderId}/tracking")]
     public async Task<IActionResult> GetOrderTrackingByIdAsync(int orderId)
     {
@@ -68,6 +73,7 @@ public class OrdersController : BaseController
         var result = await _orderService.GetOrderTrackingByIdAsync(orderId, companyId);
         return result;
     }
+
     [HttpPut("{orderId}")]
     [Authorize(Permissions.Orders.Update)]
     public async Task<IActionResult> UpdateOrder(int orderId, [FromBody] UpdateOrderDto dto)
@@ -102,5 +108,13 @@ public class OrdersController : BaseController
     {
         var companyId = GetCompanyId();
         return await _orderService.GetOrdersSummaryAsync(companyId);
+    }
+
+    [HttpGet("statuses")]
+    public IActionResult GetOrderStatuses()
+    {
+        var statuses = EnumHelper.ToDtoList<OrderStatus, EnumDto>((id, name) => new EnumDto { Id = id, Name = name });
+
+        return new OkObjectResult(statuses);
     }
 }
