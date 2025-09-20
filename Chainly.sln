@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chainly.Infrastructure", "C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chainly.API", "Chainly.API\Chainly.API.csproj", "{44A9AE22-0562-4A05-A561-91D31AAEEF55}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chainly.Testing", "Chainly.Testing\Chainly.Testing.csproj", "{906DAB33-E6C8-47C0-8E57-E95DA7AF74FA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{44A9AE22-0562-4A05-A561-91D31AAEEF55}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{44A9AE22-0562-4A05-A561-91D31AAEEF55}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{44A9AE22-0562-4A05-A561-91D31AAEEF55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{906DAB33-E6C8-47C0-8E57-E95DA7AF74FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{906DAB33-E6C8-47C0-8E57-E95DA7AF74FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{906DAB33-E6C8-47C0-8E57-E95DA7AF74FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{906DAB33-E6C8-47C0-8E57-E95DA7AF74FA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
