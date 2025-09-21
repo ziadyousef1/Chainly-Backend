@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chainly.Infrastructure", "C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chainly.API", "Chainly.API\Chainly.API.csproj", "{44A9AE22-0562-4A05-A561-91D31AAEEF55}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chainly.Testing", "Chainly.Testing\Chainly.Testing.csproj", "{906DAB33-E6C8-47C0-8E57-E95DA7AF74FA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chainly.Application.Tests", "Chainly.Testing\Chainly.Application.Tests.csproj", "{906DAB33-E6C8-47C0-8E57-E95DA7AF74FA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
