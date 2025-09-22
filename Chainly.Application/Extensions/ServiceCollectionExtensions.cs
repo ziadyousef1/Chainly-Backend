@@ -13,7 +13,7 @@ namespace Chainly.Application.Extensions
         public static IServiceCollection AddApplicationServices(this IServiceCollection services,
             IConfiguration configuration)
         {
-            services.Configure<AzureOpenAISettings>(configuration.GetSection("AzureOpenAI"));
+            services.Configure<AzureOpenAISettings>(configuration.GetSection("AzureOpenAISettings"));
             services.Configure<AiApiSettings>(configuration.GetSection("AiApi"));
 
             services.AddScoped<IAuthService, AuthService>();
