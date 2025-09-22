@@ -54,12 +54,13 @@ Chainly/
 ├── Chainly.Domain/              # Domain layer
 │   ├── Constants/               # Enums and constants
 │   └── Models/                  # Domain entities
-└── Chainly.Infrastructure/      # Infrastructure layer
-    ├── Extensions/              # Infrastructure extensions
-    ├── Identity/                # Authentication
-    ├── MailService/             # Email service
-    ├── Migrations/              # EF Core migrations
-    └── AppDbContext.cs          # Database context
+├── Chainly.Infrastructure/      # Infrastructure layer
+│   ├── Extensions/              # Infrastructure extensions
+│   ├── Identity/                # Authentication
+│   ├── MailService/             # Email service
+│   ├── Migrations/              # EF Core migrations
+│   └── AppDbContext.cs          # Database context
+└── Chainly.Application.Tests/   # Tests for business logic 
 ```
 
 
@@ -148,7 +149,24 @@ dotnet ef database update --project Chainly.Infrastructure
 ```
 
 
+## Testing
+
+Business logic is covered by tests.
+
+To run unit tests for Chainly:
+
+1. Navigate to the solution directory:
+   ```bash
+   cd Chainly
+   ```
+
+2. Run all tests using the .NET CLI:
+   ```bash
+   dotnet test
+   ```
+
 <div>
   <img src="./assets/DevIgnite.png" width="150" align="left" />
   <img src="./assets/Victories4.png" width="150" align="right" />
+</div>
 </div>
