@@ -64,10 +64,10 @@ public class ReportService(AppDbContext context) : IReportService
             .Where(r => r.ProductionLine.CompanyId == companyId);
 
         if (startDate.HasValue)
-            query = query.Where(r => r.ReportDate.Date >= startDate.Value.Date);
+            query = query.Where(r => r.ReportDate.Date.Day >= startDate.Value.Date.Day);
 
         if (endDate.HasValue)
-            query = query.Where(r => r.ReportDate.Date <= endDate.Value.Date);
+            query = query.Where(r => r.ReportDate.Date.Day <= endDate.Value.Date.Day);
 
         var totalCount = await query.CountAsync();
 
@@ -77,9 +77,9 @@ public class ReportService(AppDbContext context) : IReportService
             .Take(pageSize)
             .Select(r => new
             {
-                r.Id,
-                r.VideoName,
-                r.ReportDate
+                ID = r.Id,
+                videoName = r.VideoName,
+                reportDate = r.ReportDate.ToAppFormat(),
             })
             .ToListAsync();
 
