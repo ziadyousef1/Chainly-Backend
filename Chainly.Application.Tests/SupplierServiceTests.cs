@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Text.Json;
 
-namespace Chainly.Testing
+namespace Chainly.Application.Tests
 {
     public class SupplierServiceTests
     {
@@ -403,12 +403,12 @@ namespace Chainly.Testing
                 Latitude = 1,
                 Longitude = 1,
                 FacilityType = "F",
-                Sector = "S", 
+                Sector = "S",
                 MaterialIds = null
             };
 
             // Act
-            var result = await service.CreateSupplierAsync(dto , 999);
+            var result = await service.CreateSupplierAsync(dto, 999);
 
             // Assert
             var notFound = Assert.IsType<NotFoundObjectResult>(result);
@@ -510,7 +510,7 @@ namespace Chainly.Testing
                 Longitude = 31,
                 FacilityType = "NewF",
                 Sector = "NewS",
-                MaterialIds = new List<int> { newMaterial.Id } 
+                MaterialIds = new List<int> { newMaterial.Id }
             };
 
             // Act
@@ -556,7 +556,7 @@ namespace Chainly.Testing
                 LocationLongitude = 0m,
                 FacilityType = "F",
                 Sector = "S",
-                CompanyId = otherCompany.Id 
+                CompanyId = otherCompany.Id
             };
             await context.Suppliers.AddAsync(supplier);
             await context.SaveChangesAsync();
@@ -564,7 +564,7 @@ namespace Chainly.Testing
             var service = new SupplierService(context, null);
             var dto = new SupplierUpdateDto { Name = "X", Latitude = 1, Longitude = 1, MaterialIds = null };
 
-            var result = await service.UpdateSupplierAsync(supplier.Id, dto, companyId: 1); 
+            var result = await service.UpdateSupplierAsync(supplier.Id, dto, companyId: 1);
             Assert.IsType<NotFoundObjectResult>(result);
         }
 
@@ -627,13 +627,13 @@ namespace Chainly.Testing
                 LocationLongitude = 0m,
                 FacilityType = "F",
                 Sector = "S",
-                CompanyId = otherCompany.Id 
+                CompanyId = otherCompany.Id
             };
             await context.Suppliers.AddAsync(supplier);
             await context.SaveChangesAsync();
 
             var service = new SupplierService(context, null);
-            var result = await service.DeleteSupplierAsync(supplier.Id, company.Id); 
+            var result = await service.DeleteSupplierAsync(supplier.Id, company.Id);
             Assert.IsType<NotFoundObjectResult>(result);
         }
     }

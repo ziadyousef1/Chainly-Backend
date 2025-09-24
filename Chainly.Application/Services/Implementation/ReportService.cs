@@ -21,8 +21,8 @@ public class ReportService(AppDbContext context) : IReportService
             .FirstOrDefaultAsync(r => r.SessionId == sessionDto.SessionId);
 
         if (exists != null)
-            return new BadRequestObjectResult("A report for this session already exists.");
-
+            return new ObjectResult(new { reportId = exists.Id });
+       
         var report = new Report
         {
             SessionId = sessionDto.SessionId,

@@ -17,7 +17,7 @@ public class AzureOpenAIService:IAzureOpenAIService
     }
     public async Task<string> GenerateOrderUpdateMessageAsync(string orderUpdate)
     {
-      
+        
         var systemPrompt = @"You are a helpful customer service assistant for Chainly, a supply chain management company. 
             Provide friendly, informative updates about customer orders. Keep responses concise and professional.
             Include relevant details like status, delivery dates, and tracking information when available.";

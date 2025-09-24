@@ -25,17 +25,18 @@ public class OrderService : IOrderService
         _dbContext = dbContext;
         _externalApiService = externalApiService;
     }
-    public async Task<ServiceResponse> GetOrderUpdateAsync(int orderId)
+    public async Task<ServiceResponse> GetOrderUpdateAsync(string code, int companyId)
     {
-        var order = await _dbContext.Orders.FirstOrDefaultAsync(o => o.CompanyOrderId == orderId);
+        var order = await _dbContext.Orders.FirstOrDefaultAsync(o => o.Code == code);
         if (order == null)
         {
             return new ServiceResponse("Order not found", false);
         }
 
         var orderTracking = await _dbContext.OrderTracking
-            .Where(ot => ot.OrderId == orderId)
-            .Select(ot => new { ot.Status, ot.Timestamp }).ToListAsync();
+            .Where(o => o.OrderId == order.Id && o.CompanyId == companyId)
+            .Select(ot => new { ot.Status, ot.Timestamp ,ot.Notes})
+            .ToListAsync();
         var orderTrackingJson = System.Text.Json.JsonSerializer.Serialize(orderTracking);
         var message = await _azureOpenAiService.GenerateOrderUpdateMessageAsync(orderTrackingJson);
         return new ServiceResponse(message, true);

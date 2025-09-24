@@ -8,7 +8,7 @@ namespace Chainly.Application.Services.Interfaces;
 
 public interface IOrderService
 {
-    Task<ServiceResponse> GetOrderUpdateAsync(int orderId);
+    Task<ServiceResponse> GetOrderUpdateAsync(string  code,int companyId);
     Task<IActionResult> ImportOrdersFromExcelAsync(IFormFile file, int companyId);
     Task<IActionResult> GetPagedOrdersAsync(int companyId, int pageNumber = 1, int pageSize = 10,OrderStatus? status = null, string? searchTerm = null);
     Task<IActionResult> GetOrderTrackingByIdAsync(int orderId,int companyId);

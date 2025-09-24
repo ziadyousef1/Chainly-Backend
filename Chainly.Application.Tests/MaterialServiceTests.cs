@@ -10,7 +10,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace Chainly.Testing
+namespace Chainly.Application.Tests
 {
     public class MaterialServiceTests
     {
@@ -158,8 +158,14 @@ namespace Chainly.Testing
             var context = GetDbContext(nameof(GetMaterialByIdAsync_ValidRequest_ReturnsMaterialWithSuppliers));
 
             var company = new Company { Id = 1, Name = "Main Co", LocationLatitude = 30, LocationLongitude = 30 };
-            var supplier = new Supplier { Id = 1, Name = "Supplier A", CompanyId = 1, LocationLatitude = 31, LocationLongitude = 31,
-                FacilityType = "Factory",   
+            var supplier = new Supplier
+            {
+                Id = 1,
+                Name = "Supplier A",
+                CompanyId = 1,
+                LocationLatitude = 31,
+                LocationLongitude = 31,
+                FacilityType = "Factory",
                 Sector = "Manufacturing"
             };
             var material = new Material { Id = 1, Name = "Steel", EmissionValue = 10, Unit = "kg" };
@@ -191,12 +197,24 @@ namespace Chainly.Testing
             var context = GetDbContext(nameof(GetMaterialByIdAsync_WithSearch_FiltersSuppliers));
 
             var company = new Company { Id = 1, Name = "Main Co", LocationLatitude = 30, LocationLongitude = 30 };
-            var supplier1 = new Supplier { Id = 1, Name = "Supplier A", CompanyId = 1, LocationLatitude = 31, LocationLongitude = 31 ,
-                FacilityType = "Factory",   
+            var supplier1 = new Supplier
+            {
+                Id = 1,
+                Name = "Supplier A",
+                CompanyId = 1,
+                LocationLatitude = 31,
+                LocationLongitude = 31,
+                FacilityType = "Factory",
                 Sector = "Manufacturing"
             };
-            var supplier2 = new Supplier { Id = 2, Name = "Other Supplier", CompanyId = 1, LocationLatitude = 32, LocationLongitude = 32 ,
-                FacilityType = "Factory",   
+            var supplier2 = new Supplier
+            {
+                Id = 2,
+                Name = "Other Supplier",
+                CompanyId = 1,
+                LocationLatitude = 32,
+                LocationLongitude = 32,
+                FacilityType = "Factory",
                 Sector = "Manufacturing"
             };
             var material = new Material { Id = 1, Name = "Steel", EmissionValue = 10, Unit = "kg" };

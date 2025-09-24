@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Chainly.Application\Chainly.Application.csproj" />
+    <ProjectReference Include="..\Chainly.Infrastructure\Chainly.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -19,10 +19,11 @@ public class OrdersController : BaseController
         _orderService = orderService;
     }
 
-    [HttpGet("{orderId}/update")]
-    public async Task<IActionResult> GetOrderUpdate(int orderId)
+    [HttpGet("{code}/update")]
+    public async Task<IActionResult> GetOrderUpdate(string code)
     {
-        var response = await _orderService.GetOrderUpdateAsync(orderId);
+        var companyId = GetCompanyId();
+        var response = await _orderService.GetOrderUpdateAsync(code,companyId);
         if (!response.IsSuccess)
         {
             return NotFound(response.Message);
