@@ -37,7 +37,7 @@ public class ProductService(AppDbContext context) : IProductService
             {
                 Id = p.Id,
                 Name = p.Name,
-                Stock = p.Stock - context.SalesData.Count(s => s.ProductId == p.Id && s.CompanyId == companyId)
+                Stock = Math.Abs(p.Stock - context.SalesData.Count(s => s.ProductId == p.Id && s.CompanyId == companyId))
             })
             .ToListAsync();
 
