@@ -75,7 +75,7 @@ public class ProductService(AppDbContext context) : IProductService
                 {
                     Id = p.Id,
                     Name = p.Name,
-                    Stock = p.Stock - s.SalesCount
+                    Stock = Math.Abs(p.Stock - s.SalesCount)
                 }
             )
             .ToListAsync();
@@ -86,20 +86,20 @@ public class ProductService(AppDbContext context) : IProductService
     public async Task<IActionResult> ImportProductsFromExcelAsync(IFormFile file, int companyId)
     {
         ExcelPackage.License.SetNonCommercialPersonal("Product Import");
-        
+
         var productsList = new List<ProductImportDto>();
 
         using var stream = file.OpenReadStream();
         using var package = new ExcelPackage(stream);
         var worksheet = package.Workbook.Worksheets.FirstOrDefault();
-        
+
         if (worksheet == null)
         {
             return new BadRequestObjectResult("No worksheet found in the Excel file");
         }
 
         var rowCount = worksheet.Dimension?.Rows ?? 0;
-        
+
         if (rowCount <= 1)
         {
             return new BadRequestObjectResult("Excel file is empty or has no data rows");
@@ -118,7 +118,8 @@ public class ProductService(AppDbContext context) : IProductService
                 string.IsNullOrEmpty(nameText) ||
                 !int.TryParse(quantityText, out var quantity))
             {
-                return new BadRequestObjectResult($"Invalid data format in row {row}. Please check Id, Name, and quantity columns.");
+                return new BadRequestObjectResult(
+                    $"Invalid data format in row {row}. Please check Id, Name, and quantity columns.");
             }
 
             var product = new ProductImportDto
@@ -126,7 +127,7 @@ public class ProductService(AppDbContext context) : IProductService
                 Id = id,
                 Name = nameText,
                 Quantity = quantity,
-                CompanyId = companyId 
+                CompanyId = companyId
             };
 
             productsList.Add(product);
@@ -141,8 +142,8 @@ public class ProductService(AppDbContext context) : IProductService
         {
             Id = dto.Id,
             Name = dto.Name,
-            Stock = dto.Quantity, 
-            CompanyId = companyId 
+            Stock = dto.Quantity,
+            CompanyId = companyId
         }).ToList();
 
         var existingProducts = await context.Products
@@ -172,7 +173,8 @@ public class ProductService(AppDbContext context) : IProductService
             TotalProcessed = productsList.Count,
             Updated = productsToUpdate.Count,
             Inserted = productsToInsert.Count,
-            Message = $"Successfully processed {productsList.Count} products. {productsToUpdate.Count} updated, {productsToInsert.Count} inserted."
+            Message =
+                $"Successfully processed {productsList.Count} products. {productsToUpdate.Count} updated, {productsToInsert.Count} inserted."
         };
 
         return new OkObjectResult(result);
