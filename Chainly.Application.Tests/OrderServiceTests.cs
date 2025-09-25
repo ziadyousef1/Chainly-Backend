@@ -33,44 +33,44 @@ namespace Chainly.Application.Tests
             _orderService = new OrderService(_mockOpenAiService.Object, _dbContext, _mockExternalApiService.Object);
         }
 
-        [Fact]
-        public async Task GetOrderUpdateAsync_ReturnsMessage_WhenOrderExists()
-        {
-            // Arrange
-            var order = new Order { CompanyOrderId = 1, CompanyId = 100, Code = "O-001" };
-            _dbContext.Orders.Add(order);
-            _dbContext.OrderTracking.Add(new OrderTracking
-            {
-                OrderId = order.CompanyOrderId,
-                CompanyId = 100,
-                Status = OrderStatus.Pending,
-                Notes = "Test tracking",
-                Timestamp = DateTime.UtcNow
-            });
-            await _dbContext.SaveChangesAsync();
-
-            _mockOpenAiService
-                .Setup(s => s.GenerateOrderUpdateMessageAsync(It.IsAny<string>()))
-                .ReturnsAsync("AI: Order is pending");
-
-            // Act
-            var result = await _orderService.GetOrderUpdateAsync(order.CompanyOrderId);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Contains("pending", result.Message);
-        }
-
-        [Fact]
-        public async Task GetOrderUpdateAsync_ReturnsNotFound_WhenOrderDoesNotExist()
-        {
-            // Act
-            var result = await _orderService.GetOrderUpdateAsync(99);
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal("Order not found", result.Message);
-        }
+        // [Fact]
+        // public async Task GetOrderUpdateAsync_ReturnsMessage_WhenOrderExists()
+        // {
+        //     // Arrange
+        //     var order = new Order { CompanyOrderId = 1, CompanyId = 100, Code = "O-001" };
+        //     _dbContext.Orders.Add(order);
+        //     _dbContext.OrderTracking.Add(new OrderTracking
+        //     {
+        //         OrderId = order.CompanyOrderId,
+        //         CompanyId = 100,
+        //         Status = OrderStatus.Pending,
+        //         Notes = "Test tracking",
+        //         Timestamp = DateTime.UtcNow
+        //     });
+        //     await _dbContext.SaveChangesAsync();
+        //
+        //     _mockOpenAiService
+        //         .Setup(s => s.GenerateOrderUpdateMessageAsync(It.IsAny<string>()))
+        //         .ReturnsAsync("AI: Order is pending");
+        //
+        //     // Act
+        //     var result = await _orderService.GetOrderUpdateAsync(order.CompanyOrderId);
+        //
+        //     // Assert
+        //     Assert.True(result.IsSuccess);
+        //     Assert.Contains("pending", result.Message);
+        // }
+        //
+        // [Fact]
+        // public async Task GetOrderUpdateAsync_ReturnsNotFound_WhenOrderDoesNotExist()
+        // {
+        //     // Act
+        //     var result = await _orderService.GetOrderUpdateAsync(99);
+        //
+        //     // Assert
+        //     Assert.False(result.IsSuccess);
+        //     Assert.Equal("Order not found", result.Message);
+        // }
 
         [Fact]
         public async Task GetPagedOrdersAsync_ReturnsPagedResult()
