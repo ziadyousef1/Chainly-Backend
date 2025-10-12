@@ -17,7 +17,7 @@ namespace Chainly.Infrastructure.Extensions
             services.AddDbContext<AppDbContext>(options =>
             {
                 var connectionString = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == Environments.Development
-                    ? configuration.GetConnectionString("DefaultConnection")
+                    ? configuration.GetConnectionString("ProductionConnection")
                     : configuration.GetConnectionString("ProductionConnection");
 
                 options.UseSqlServer(connectionString);

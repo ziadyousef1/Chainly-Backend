@@ -16,7 +16,7 @@ namespace Chainly.Application.Tests
     public class OrderServiceTests
     {
         private readonly AppDbContext _dbContext;
-        private readonly Mock<IAzureOpenAIService> _mockOpenAiService;
+        private readonly Mock<IDeepSeekService> _mockDeepSeekService;
         private readonly Mock<IExternalApiService> _mockExternalApiService;
         private readonly OrderService _orderService;
 
@@ -27,10 +27,10 @@ namespace Chainly.Application.Tests
                 .Options;
 
             _dbContext = new AppDbContext(options);
-            _mockOpenAiService = new Mock<IAzureOpenAIService>();
+            _mockDeepSeekService = new Mock<IDeepSeekService>();
             _mockExternalApiService = new Mock<IExternalApiService>();
 
-            _orderService = new OrderService(_mockOpenAiService.Object, _dbContext, _mockExternalApiService.Object);
+            _orderService = new OrderService(_mockDeepSeekService.Object, _dbContext, _mockExternalApiService.Object);
         }
 
         [Fact]
@@ -49,12 +49,12 @@ namespace Chainly.Application.Tests
             });
             await _dbContext.SaveChangesAsync();
 
-            _mockOpenAiService
+            _mockDeepSeekService
                 .Setup(s => s.GenerateOrderUpdateMessageAsync(It.IsAny<string>()))
                 .ReturnsAsync("AI: Order is pending");
 
             // Act
-            var result = await _orderService.GetOrderUpdateAsync(order.CompanyOrderId);
+            var result = await _orderService.GetOrderUpdateAsync("125654",order.CompanyOrderId);
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -65,7 +65,7 @@ namespace Chainly.Application.Tests
         public async Task GetOrderUpdateAsync_ReturnsNotFound_WhenOrderDoesNotExist()
         {
             // Act
-            var result = await _orderService.GetOrderUpdateAsync(99);
+            var result = await _orderService.GetOrderUpdateAsync("123458",99);
 
             // Assert
             Assert.False(result.IsSuccess);

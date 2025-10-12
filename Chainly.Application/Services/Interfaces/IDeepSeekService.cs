@@ -1,6 +1,6 @@
 ﻿namespace Chainly.Application.Services.Interfaces;
 
-public interface IAzureOpenAIService
+public interface IDeepSeekService
 {
     Task<string> GenerateOrderUpdateMessageAsync(string orderUpdate);
 
