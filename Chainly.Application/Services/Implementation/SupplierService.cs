@@ -14,7 +14,7 @@ public class SupplierService(AppDbContext context, ISupplierImportService suppli
     : ISupplierService
 {
     public async Task<IActionResult> GetSuppliersAsync(int companyId, int pageNumber = 1, int pageSize = 10,
-        string? sortType = null)
+        string? sortType = null, string? search = null)
     {
         if (pageNumber <= 0) pageNumber = 1;
         if (pageSize <= 0) pageSize = 10;
@@ -26,6 +26,14 @@ public class SupplierService(AppDbContext context, ISupplierImportService suppli
         var supplierEntities = await context.Suppliers
             .Where(s => s.CompanyId == null || s.CompanyId == company.Id)
             .ToListAsync();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            string term = search.Trim().ToLower();
+            supplierEntities = supplierEntities
+                .Where(s => s.Name.ToLower().Contains(term))
+                .ToList();
+        }
 
         var suppliers = supplierEntities
             .Select(s => new

@@ -15,10 +15,10 @@ public class SuppliersController(ISupplierService supplierService, ISupplierImpo
     [HttpGet]
     [Authorize(Permissions.Suppliers.View)]
     public async Task<IActionResult> GetAllSuppliers([FromQuery] int pageNumber, [FromQuery] int pageSize,
-        [FromQuery] string sortType = null)
+        [FromQuery] string sortType = null, [FromQuery] string? search = null)
     {
         int companyId = GetCompanyId();
-        return await supplierService.GetSuppliersAsync(companyId, pageNumber, pageSize, sortType);
+        return await supplierService.GetSuppliersAsync(companyId, pageNumber, pageSize, sortType, search);
     }
 
     [HttpGet("{id}")]

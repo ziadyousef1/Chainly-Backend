@@ -8,7 +8,7 @@ namespace Chainly.Application.Services.Interfaces;
 public interface ISupplierService
 {
     Task<IActionResult> GetSuppliersAsync(int companyId, int pageNumber = 1, int pageSize = 10,
-        string? sortType = null);
+        string? sortType = null, string? search = null);
 
     Task<IActionResult> GetSupplierAsync(int id, int companyId, int pageNumber = 1, int pageSize = 10,
         string? search = null);
