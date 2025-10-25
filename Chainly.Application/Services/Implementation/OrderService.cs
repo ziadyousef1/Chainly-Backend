@@ -14,14 +14,14 @@ namespace Chainly.Application.Services.Implementation;
 
 public class OrderService : IOrderService
 {
-    private readonly IAzureOpenAIService _azureOpenAiService;
+    private readonly IDeepSeekService _deepSeekService;
     private readonly AppDbContext _dbContext;
     private readonly IExternalApiService _externalApiService;
 
 
-    public OrderService(IAzureOpenAIService azureOpenAiService, AppDbContext dbContext,IExternalApiService externalApiService)
+    public OrderService(IDeepSeekService deepSeekService, AppDbContext dbContext,IExternalApiService externalApiService)
     {
-        _azureOpenAiService = azureOpenAiService;
+        _deepSeekService = deepSeekService;
         _dbContext = dbContext;
         _externalApiService = externalApiService;
     }
@@ -38,7 +38,7 @@ public class OrderService : IOrderService
             .Select(ot => new { ot.Status, ot.Timestamp ,ot.Notes})
             .ToListAsync();
         var orderTrackingJson = System.Text.Json.JsonSerializer.Serialize(orderTracking);
-        var message = await _azureOpenAiService.GenerateOrderUpdateMessageAsync(orderTrackingJson);
+        var message = await _deepSeekService.GenerateOrderUpdateMessageAsync(orderTrackingJson);
         return new ServiceResponse(message, true);
 
     }

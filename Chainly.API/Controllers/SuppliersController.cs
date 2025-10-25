@@ -129,7 +129,7 @@ public class SuppliersController(ISupplierService supplierService, ISupplierImpo
 
     [HttpPost("import-complete-excel")]
     [Authorize(Permissions.Suppliers.Import)]
-    public async Task<IActionResult> ImportCompleteExcelFile(IFormFile file, [FromQuery] int? companyId = null)
+    public async Task<IActionResult> ImportCompleteExcelFile(IFormFile file)
     {
         if (file == null || file.Length == 0)
             return BadRequest("Excel file is required.");
@@ -139,7 +139,7 @@ public class SuppliersController(ISupplierService supplierService, ISupplierImpo
 
         try
         {
-            companyId ??= GetCompanyId();
+            int companyId = GetCompanyId();
             var filePath = Path.GetTempFileName();
             using (var stream = new FileStream(filePath, FileMode.Create))
             {
