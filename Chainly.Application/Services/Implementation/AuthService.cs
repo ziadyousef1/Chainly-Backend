@@ -10,43 +10,35 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Chainly.Application.Configurations;
 using Chainly.Data;
 using Chainly.Domain.Constants;
 using Chainly.Application.Dtos;
+using Chainly.Application.Services.Interfaces;
 using Chainly.Domain.Models;
+using Microsoft.Extensions.Options;
 
 namespace Chainly.Application.Services
 {
-    public class AuthService : IAuthService
+    public class AuthService(
+        UserManager<User> userManager,
+        RoleManager<Role> roleManager,
+        IConfiguration config,
+        AppDbContext context,
+        IEmailSender emailSender,
+        ICloudStorageService cloudStorageService,
+        IOptions<CloudStorageSettings> cloudStorageSettings)
+        : IAuthService
     {
-        private readonly UserManager<User> _userManager;
-        private readonly RoleManager<Role> _roleManager;
-        private readonly IConfiguration _config;
-        private readonly AppDbContext _context;
-        private readonly IEmailSender _emailSender;
-
-        public AuthService(UserManager<User> userManager,
-            RoleManager<Role> roleManager,
-            IConfiguration config,
-            AppDbContext context,
-            IEmailSender emailSender)
-        {
-            _userManager = userManager;
-            _roleManager = roleManager;
-            _config = config;
-            _context = context;
-            _emailSender = emailSender;
-        }
-
         public async Task<IActionResult> RegisterAsync(RegisterDto model)
         {
             if (model.Password != model.ConfirmPassword)
                 return new BadRequestObjectResult("Password and confirmation do not match");
 
-            await using var transaction = await _context.Database.BeginTransactionAsync();
+            await using var transaction = await context.Database.BeginTransactionAsync();
             try
             {
-                var company = await _context.Companies
+                var company = await context.Companies
                     .FirstOrDefaultAsync(c => c.Name.ToLower() == model.CompanyName.ToLower());
 
                 if (company != null)
@@ -59,8 +51,8 @@ namespace Chainly.Application.Services
                     LocationLongitude = model.LocationLongitude,
                     Logo = null
                 };
-                _context.Companies.Add(company);
-                await _context.SaveChangesAsync();
+                context.Companies.Add(company);
+                await context.SaveChangesAsync();
 
                 var user = new User
                 {
@@ -70,23 +62,37 @@ namespace Chainly.Application.Services
                     CompanyId = company.Id
                 };
 
-                var result = await _userManager.CreateAsync(user, model.Password);
+                if (model.ProfilePicture != null && model.ProfilePicture.Length > 0)
+                {
+                    var uploadResult = await cloudStorageService.UploadAsync(
+                        cloudStorageSettings.Value.Containers.Avatars,
+                        model.ProfilePicture,
+                        $"{Guid.NewGuid()}"
+                    );
+
+                    if (!uploadResult.Error)
+                    {
+                        user.ProfilePicture = uploadResult.Blob.Uri;
+                    }
+                }
+
+                var result = await userManager.CreateAsync(user, model.Password);
 
                 if (!result.Succeeded)
                     return new BadRequestObjectResult(result.Errors);
 
                 var role = new Role { Name = "Manager", CompanyId = company.Id, NormalizedName = "MANAGER" };
-                _context.Roles.Add(role);
-                await _context.SaveChangesAsync();
+                context.Roles.Add(role);
+                await context.SaveChangesAsync();
 
                 var allPermissions = Permissions.GenerateAllPermissions();
                 foreach (var perm in allPermissions.SelectMany(kvp => kvp.Value))
                 {
-                    await _roleManager.AddClaimAsync(role, new Claim(CustomClaimTypes.Permission, perm));
+                    await roleManager.AddClaimAsync(role, new Claim(CustomClaimTypes.Permission, perm));
                 }
 
 
-                _context.UserRoles.Add(new IdentityUserRole<int>
+                context.UserRoles.Add(new IdentityUserRole<int>
                 {
                     UserId = user.Id,
                     RoleId = role.Id
@@ -107,12 +113,12 @@ namespace Chainly.Application.Services
 
         public async Task<IActionResult> LoginAsync(LoginDto model)
         {
-            var user = await _userManager.FindByEmailAsync(model.Email);
+            var user = await userManager.FindByEmailAsync(model.Email);
 
-            if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
+            if (user == null || !await userManager.CheckPasswordAsync(user, model.Password))
                 return new UnauthorizedObjectResult("Invalid login attempt");
 
-            if (!await _userManager.IsEmailConfirmedAsync(user))
+            if (!await userManager.IsEmailConfirmedAsync(user))
                 return new UnauthorizedObjectResult(
                     "Email is not confirmed. Please verify your email before logging in.");
 
@@ -122,7 +128,7 @@ namespace Chainly.Application.Services
 
         public async Task<IActionResult> ForgotPasswordAsync(string email)
         {
-            var user = await _userManager.FindByEmailAsync(email);
+            var user = await userManager.FindByEmailAsync(email);
             if (user == null)
                 return new NotFoundObjectResult("User Not Found !");
 
@@ -130,7 +136,7 @@ namespace Chainly.Application.Services
             user.VerificationCode = code;
             user.ExpirationCode = DateTime.UtcNow.AddMinutes(10);
 
-            await _userManager.UpdateAsync(user);
+            await userManager.UpdateAsync(user);
 
             var message = new EmailMessage(
                 new List<string> { email },
@@ -138,18 +144,18 @@ namespace Chainly.Application.Services
                 HtmlTemplate.GetVerificationCodeEmailTemplate(code)
             );
 
-            await _emailSender.SendEmailAsync(message);
+            await emailSender.SendEmailAsync(message);
 
             return new OkObjectResult("OTP Sent Successfully :)");
         }
 
         public async Task<IActionResult> ResetPasswordAsync(string email, string token, string newPassword)
         {
-            var user = await _userManager.FindByEmailAsync(email);
+            var user = await userManager.FindByEmailAsync(email);
             if (user == null)
                 return new NotFoundObjectResult("User Not Found !");
 
-            var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+            var result = await userManager.ResetPasswordAsync(user, token, newPassword);
 
             if (!result.Succeeded)
                 return new BadRequestObjectResult(result.Errors);
@@ -159,7 +165,7 @@ namespace Chainly.Application.Services
 
         public async Task<IActionResult> VerifyEmailAsync(string email, string code)
         {
-            var user = await _userManager.FindByEmailAsync(email);
+            var user = await userManager.FindByEmailAsync(email);
             if (user == null)
                 return new NotFoundObjectResult("User Not Found!");
 
@@ -168,7 +174,7 @@ namespace Chainly.Application.Services
                 user.VerificationCode = null;
                 user.ExpirationCode = null;
                 user.EmailConfirmed = true;
-                await _userManager.UpdateAsync(user);
+                await userManager.UpdateAsync(user);
                 return new OkObjectResult(new { Message = "OTP Verified Successfully!" });
             }
 
@@ -177,7 +183,7 @@ namespace Chainly.Application.Services
 
         public async Task<IActionResult> ResendVerificationCodeAsync(string email)
         {
-            var user = await _userManager.FindByEmailAsync(email);
+            var user = await userManager.FindByEmailAsync(email);
             if (user == null)
                 return new NotFoundObjectResult("User Not Found !");
 
@@ -185,7 +191,7 @@ namespace Chainly.Application.Services
             user.VerificationCode = newCode;
             user.ExpirationCode = DateTime.UtcNow.AddMinutes(10);
 
-            await _userManager.UpdateAsync(user);
+            await userManager.UpdateAsync(user);
 
             var htmlBody = HtmlTemplate.GetVerificationCodeEmailTemplate(newCode);
 
@@ -195,16 +201,16 @@ namespace Chainly.Application.Services
                 htmlBody
             );
 
-            await _emailSender.SendEmailAsync(message);
+            await emailSender.SendEmailAsync(message);
 
             return new OkObjectResult("OTP Resent Successfully :)");
         }
 
         private async Task<string> GenerateJwtToken(User user)
         {
-            var jwtSettings = _config.GetSection("Jwt");
+            var jwtSettings = config.GetSection("Jwt");
 
-            var roles = await _userManager.GetRolesAsync(user);
+            var roles = await userManager.GetRolesAsync(user);
 
             var claims = new List<Claim>
             {
@@ -217,12 +223,12 @@ namespace Chainly.Application.Services
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
 
-                var roleEntity = await _roleManager.Roles
+                var roleEntity = await roleManager.Roles
                     .FirstOrDefaultAsync(r => r.Name == role && r.CompanyId == user.CompanyId);
 
                 if (roleEntity != null)
                 {
-                    var roleClaims = await _roleManager.GetClaimsAsync(roleEntity);
+                    var roleClaims = await roleManager.GetClaimsAsync(roleEntity);
                     claims.AddRange(roleClaims
                         .Where(c => c.Type == CustomClaimTypes.Permission)
                         .Select(c => new Claim(CustomClaimTypes.Permission, c.Value)));

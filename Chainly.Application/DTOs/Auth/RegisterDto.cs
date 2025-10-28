@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace Chainly.Application.Dtos
 {
@@ -15,5 +16,6 @@ namespace Chainly.Application.Dtos
         public string CompanyName { get; set; }
         public decimal LocationLatitude { get; set; }
         public decimal LocationLongitude { get; set; }
+        public IFormFile? ProfilePicture { get; set; }
     }
 }

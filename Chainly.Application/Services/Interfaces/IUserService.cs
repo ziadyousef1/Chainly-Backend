@@ -10,5 +10,6 @@ namespace Chainly.Application.Interfaces
         Task<IActionResult> CreateUserAsync(UserCreateDto dto, int companyId);
         Task<IActionResult> UpdateUserAsync(int id, UserUpdateDto dto, int companyId);
         Task<IActionResult> DeleteUserAsync(int id, int companyId);
+        Task<IActionResult> GetCurrentUserAsync(int userId);
     }
 }

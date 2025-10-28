@@ -44,4 +44,13 @@ public class UsersController(IUserService userService) : BaseController
         int companyId = GetCompanyId();
         return await userService.DeleteUserAsync(id, companyId);
     }
+
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IActionResult> GetCurrentUser()
+    {
+        int userId = GetUserId();
+
+        return await userService.GetCurrentUserAsync(userId);
+    }
 }

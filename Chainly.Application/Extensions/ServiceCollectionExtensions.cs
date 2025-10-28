@@ -16,6 +16,7 @@ namespace Chainly.Application.Extensions
         {
             services.Configure<DeepSeekSettings>(configuration.GetSection("DeepSeekSettings"));
             services.Configure<AiApiSettings>(configuration.GetSection("AiApi"));
+            services.Configure<CloudStorageSettings>(configuration.GetSection(CloudStorageSettings.AzureStorage));
 
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IUserService, UserService>();
@@ -36,6 +37,7 @@ namespace Chainly.Application.Extensions
             services.AddScoped<IReportService, ReportService>();
             services.AddScoped<ILoggingService, LoggingService>();
             services.AddScoped<IMaterialService, MaterialService>();
+            services.AddScoped<ICloudStorageService, CloudStorageService>();
 
             services.AddHttpClient();
             services.AddScoped<IExternalApiService, ExternalApiService>();

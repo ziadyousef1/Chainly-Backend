@@ -186,4 +186,24 @@ public class UserService(UserManager<User> userManager, AppDbContext context) : 
 
         return new OkObjectResult(userDto);
     }
+
+    public async Task<IActionResult> GetCurrentUserAsync(int userId)
+    {
+        var user = await context.Users
+            .Include(u => u.Company)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user == null)
+            return new NotFoundObjectResult("User not found");
+
+        var userProfile = new UserProfileDto
+        {
+            ProfilePicture = user.ProfilePicture,
+            Name = user.FullName,
+            Email = user.Email,
+            CompanyName = user.Company?.Name,
+        };
+
+        return new OkObjectResult(userProfile);
+    }
 }
