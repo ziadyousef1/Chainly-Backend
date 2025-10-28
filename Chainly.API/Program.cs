@@ -16,6 +16,7 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 var app = builder.Build();
 await DBInitializer.SeedAsync(app.Services);
 
+app.UseStaticFiles();
 app.UseGlobalExceptionHandling();
 app.UseHttpsRedirection();
 app.UseAuthentication();

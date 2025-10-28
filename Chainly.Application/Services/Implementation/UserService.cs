@@ -1,14 +1,16 @@
 using Chainly.Application.DTOs.Users;
 using Chainly.Application.Interfaces;
 using Chainly.Data;
+using Chainly.Domain.Constants;
 using Chainly.Domain.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Chainly.Application.Services.Implementation;
 
-public class UserService(UserManager<User> userManager, AppDbContext context) : IUserService
+public class UserService(UserManager<User> userManager, AppDbContext context, IHttpContextAccessor accessor) : IUserService
 {
     public async Task<IActionResult> GetAllUsersAsync(int companyId, int pageNumber = 1, int pageSize = 10)
     {
@@ -198,12 +200,19 @@ public class UserService(UserManager<User> userManager, AppDbContext context) : 
 
         var userProfile = new UserProfileDto
         {
-            ProfilePicture = user.ProfilePicture,
+            ProfilePicture = user.ProfilePicture ?? GetDefaultAvatar(),
             Name = user.FullName,
             Email = user.Email,
             CompanyName = user.Company?.Name,
         };
 
         return new OkObjectResult(userProfile);
+    }
+
+    public string GetDefaultAvatar()
+    {
+        var request = accessor.HttpContext?.Request;
+        var baseUrl = $"{request.Scheme}://{request.Host}";
+        return $"{baseUrl}{DefaultAssets.DefaultCompanyAvatar}";
     }
 }
