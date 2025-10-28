@@ -8,7 +8,10 @@ namespace Chainly.Application.Interfaces
         Task<IActionResult> RegisterAsync(RegisterDto model);
         Task<IActionResult> LoginAsync(LoginDto model);
         Task<IActionResult> ForgotPasswordAsync(string email);
-        Task<IActionResult> ResetPasswordAsync(string email, string token, string newPassword);
+
+        Task<IActionResult> ResetPasswordAsync(string email, string currentPassword, string newPassword,
+            string newPasswordConfirm);
+
         Task<IActionResult> VerifyEmailAsync(string email, string code);
         Task<IActionResult> ResendVerificationCodeAsync(string email);
     }

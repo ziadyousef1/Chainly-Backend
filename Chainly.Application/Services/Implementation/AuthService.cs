@@ -149,13 +149,18 @@ namespace Chainly.Application.Services
             return new OkObjectResult("OTP Sent Successfully :)");
         }
 
-        public async Task<IActionResult> ResetPasswordAsync(string email, string token, string newPassword)
+        public async Task<IActionResult> ResetPasswordAsync(string email, string currentPassword, string newPassword, string newPasswordConfirm)
         {
             var user = await userManager.FindByEmailAsync(email);
             if (user == null)
-                return new NotFoundObjectResult("User Not Found !");
+                return new NotFoundObjectResult("User Not Found!");
 
-            var result = await userManager.ResetPasswordAsync(user, token, newPassword);
+            if (newPassword != newPasswordConfirm)
+            {
+                return new BadRequestObjectResult("Passwords do not match");
+            }
+
+            var result = await userManager.ChangePasswordAsync(user, currentPassword, newPassword);
 
             if (!result.Succeeded)
                 return new BadRequestObjectResult(result.Errors);

@@ -10,8 +10,9 @@ namespace Chainly.Infrastructure.MailService
     {
         public string Email { get; set; }
 
-        public string Token { get; set; }
+        public string currentPassword { get; set; }
 
         public string newPassword { get; set; }
+        public string newPasswordConfirm { get; set; }
     }
 }

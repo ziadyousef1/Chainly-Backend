@@ -31,7 +31,8 @@ public class AuthenticationController(IAuthService authService) : BaseController
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
     {
-        return await authService.ResetPasswordAsync(request.Email, request.Token, request.newPassword);
+        return await authService.ResetPasswordAsync(request.Email, request.currentPassword, request.newPassword,
+            request.newPasswordConfirm);
     }
 
     [HttpPost("resend-otp")]
