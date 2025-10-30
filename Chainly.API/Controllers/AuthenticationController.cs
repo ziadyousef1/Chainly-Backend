@@ -1,4 +1,7 @@
-﻿namespace Chainly.API.Controllers;
+﻿using Chainly.Application.Dtos.Auth;
+using Chainly.Application.DTOs.Auth;
+
+namespace Chainly.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -13,7 +16,15 @@ public class AuthenticationController(IAuthService authService) : BaseController
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginDto model)
     {
-        return await authService.LoginAsync(model);
+        var result = await authService.LoginAsync(model);
+
+        if (result is OkObjectResult { Value: LoginResponseDto payload } &&
+            !string.IsNullOrEmpty(payload.RefreshToken))
+        {
+            SetRefreshTokenCookie(payload.RefreshToken, payload.RefreshTokenExpiration);
+        }
+
+        return result;
     }
 
     [HttpPost("forget-password")]
@@ -40,5 +51,46 @@ public class AuthenticationController(IAuthService authService) : BaseController
     public async Task<IActionResult> ResendOtp([FromBody] ResendOtpRequest request)
     {
         return await authService.ResendVerificationCodeAsync(request.Email);
+    }
+
+    private void SetRefreshTokenCookie(string refreshToken, DateTime expires)
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Expires = expires.ToLocalTime()
+        };
+
+        Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+    }
+
+    [HttpGet("refreshToken")]
+    public async Task<IActionResult> RefreshToken()
+    {
+        var refreshToken = Request.Cookies["refreshToken"];
+        var result = await authService.RefreshTokenAsync(refreshToken);
+
+        if (result is OkObjectResult { Value: LoginResponseDto payload })
+        {
+            SetRefreshTokenCookie(payload.RefreshToken, payload.RefreshTokenExpiration);
+        }
+
+        return result;
+    }
+
+    [HttpPost("revokeToken")]
+    public async Task<IActionResult> RevokeToken([FromBody] RevokeToken model)
+    {
+        var token = model.Token ?? Request.Cookies["refreshToken"];
+
+        if (string.IsNullOrEmpty(token))
+            return BadRequest("Token is required.");
+
+        var result = await authService.RevokeTokenAsync(token);
+
+        if (!result)
+            return BadRequest("Token is invalid.");
+
+        return Ok();
     }
 }

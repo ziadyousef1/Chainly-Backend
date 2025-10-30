@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Chainly.Application.Dtos
+namespace Chainly.Application.Dtos.Auth
 {
     public class LoginDto
     {

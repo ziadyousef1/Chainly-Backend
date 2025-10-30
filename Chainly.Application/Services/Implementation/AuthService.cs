@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Chainly.Application.Configurations;
 using Chainly.Data;
@@ -17,240 +18,323 @@ using Chainly.Application.Dtos;
 using Chainly.Application.Services.Interfaces;
 using Chainly.Domain.Models;
 using Microsoft.Extensions.Options;
+using System.Security.Cryptography;
+using Chainly.Application.Dtos.Auth;
 
-namespace Chainly.Application.Services
+namespace Chainly.Application.Services.Implementation;
+
+public class AuthService(
+    UserManager<User> userManager,
+    RoleManager<Role> roleManager,
+    IConfiguration config,
+    AppDbContext context,
+    IEmailSender emailSender,
+    ICloudStorageService cloudStorageService,
+    IOptions<CloudStorageSettings> cloudStorageSettings,
+    IOptions<JwtSettings> jwtSettings)
+    : IAuthService
 {
-    public class AuthService(
-        UserManager<User> userManager,
-        RoleManager<Role> roleManager,
-        IConfiguration config,
-        AppDbContext context,
-        IEmailSender emailSender,
-        ICloudStorageService cloudStorageService,
-        IOptions<CloudStorageSettings> cloudStorageSettings)
-        : IAuthService
+    public async Task<IActionResult> RegisterAsync(RegisterDto model)
     {
-        public async Task<IActionResult> RegisterAsync(RegisterDto model)
+        if (model.Password != model.ConfirmPassword)
+            return new BadRequestObjectResult("Password and confirmation do not match");
+
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        try
         {
-            if (model.Password != model.ConfirmPassword)
-                return new BadRequestObjectResult("Password and confirmation do not match");
+            var company = await context.Companies
+                .FirstOrDefaultAsync(c => c.Name.ToLower() == model.CompanyName.ToLower());
 
-            await using var transaction = await context.Database.BeginTransactionAsync();
-            try
+            if (company != null)
+                return new BadRequestObjectResult(new { Message = "A company with this name already exists." });
+
+            company = new Company
             {
-                var company = await context.Companies
-                    .FirstOrDefaultAsync(c => c.Name.ToLower() == model.CompanyName.ToLower());
+                Name = model.CompanyName,
+                LocationLatitude = model.LocationLatitude,
+                LocationLongitude = model.LocationLongitude,
+                Logo = null
+            };
+            context.Companies.Add(company);
+            await context.SaveChangesAsync();
 
-                if (company != null)
-                    return new BadRequestObjectResult(new { Message = "A company with this name already exists." });
+            var user = new User
+            {
+                UserName = model.Email,
+                Email = model.Email,
+                FullName = model.FullName,
+                CompanyId = company.Id
+            };
 
-                company = new Company
+            if (model.ProfilePicture != null && model.ProfilePicture.Length > 0)
+            {
+                var uploadResult = await cloudStorageService.UploadAsync(
+                    cloudStorageSettings.Value.Containers.Avatars,
+                    model.ProfilePicture,
+                    $"{Guid.NewGuid()}"
+                );
+
+                if (!uploadResult.Error)
                 {
-                    Name = model.CompanyName,
-                    LocationLatitude = model.LocationLatitude,
-                    LocationLongitude = model.LocationLongitude,
-                    Logo = null
-                };
-                context.Companies.Add(company);
-                await context.SaveChangesAsync();
-
-                var user = new User
-                {
-                    UserName = model.Email,
-                    Email = model.Email,
-                    FullName = model.FullName,
-                    CompanyId = company.Id
-                };
-
-                if (model.ProfilePicture != null && model.ProfilePicture.Length > 0)
-                {
-                    var uploadResult = await cloudStorageService.UploadAsync(
-                        cloudStorageSettings.Value.Containers.Avatars,
-                        model.ProfilePicture,
-                        $"{Guid.NewGuid()}"
-                    );
-
-                    if (!uploadResult.Error)
-                    {
-                        user.ProfilePicture = uploadResult.Blob.Uri;
-                    }
+                    user.ProfilePicture = uploadResult.Blob.Uri;
                 }
-
-                var result = await userManager.CreateAsync(user, model.Password);
-
-                if (!result.Succeeded)
-                    return new BadRequestObjectResult(result.Errors);
-
-                var role = new Role { Name = "Manager", CompanyId = company.Id, NormalizedName = "MANAGER" };
-                context.Roles.Add(role);
-                await context.SaveChangesAsync();
-
-                var allPermissions = Permissions.GenerateAllPermissions();
-                foreach (var perm in allPermissions.SelectMany(kvp => kvp.Value))
-                {
-                    await roleManager.AddClaimAsync(role, new Claim(CustomClaimTypes.Permission, perm));
-                }
-
-
-                context.UserRoles.Add(new IdentityUserRole<int>
-                {
-                    UserId = user.Id,
-                    RoleId = role.Id
-                });
-
-                await transaction.CommitAsync();
-
-                await ResendVerificationCodeAsync(user.Email);
-
-                return new OkObjectResult(new { Message = "User registered successfully" });
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
-        }
-
-        public async Task<IActionResult> LoginAsync(LoginDto model)
-        {
-            var user = await userManager.FindByEmailAsync(model.Email);
-
-            if (user == null || !await userManager.CheckPasswordAsync(user, model.Password))
-                return new UnauthorizedObjectResult("Invalid login attempt");
-
-            if (!await userManager.IsEmailConfirmedAsync(user))
-                return new UnauthorizedObjectResult(
-                    "Email is not confirmed. Please verify your email before logging in.");
-
-            var token = await GenerateJwtToken(user);
-            return new OkObjectResult(new { Token = token });
-        }
-
-        public async Task<IActionResult> ForgotPasswordAsync(string email)
-        {
-            var user = await userManager.FindByEmailAsync(email);
-            if (user == null)
-                return new NotFoundObjectResult("User Not Found !");
-
-            var code = new Random().Next(100000, 999999).ToString();
-            user.VerificationCode = code;
-            user.ExpirationCode = DateTime.UtcNow.AddMinutes(10);
-
-            await userManager.UpdateAsync(user);
-
-            var message = new EmailMessage(
-                new List<string> { email },
-                "OTP For Reset Password",
-                HtmlTemplate.GetVerificationCodeEmailTemplate(code)
-            );
-
-            await emailSender.SendEmailAsync(message);
-
-            return new OkObjectResult("OTP Sent Successfully :)");
-        }
-
-        public async Task<IActionResult> ResetPasswordAsync(string email, string currentPassword, string newPassword, string newPasswordConfirm)
-        {
-            var user = await userManager.FindByEmailAsync(email);
-            if (user == null)
-                return new NotFoundObjectResult("User Not Found!");
-
-            if (newPassword != newPasswordConfirm)
-            {
-                return new BadRequestObjectResult("Passwords do not match");
             }
 
-            var result = await userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+            var result = await userManager.CreateAsync(user, model.Password);
 
             if (!result.Succeeded)
                 return new BadRequestObjectResult(result.Errors);
 
-            return new OkObjectResult("Password reset successfully!");
-        }
+            var role = new Role { Name = "Manager", CompanyId = company.Id, NormalizedName = "MANAGER" };
+            context.Roles.Add(role);
+            await context.SaveChangesAsync();
 
-        public async Task<IActionResult> VerifyEmailAsync(string email, string code)
-        {
-            var user = await userManager.FindByEmailAsync(email);
-            if (user == null)
-                return new NotFoundObjectResult("User Not Found!");
-
-            if (user.VerificationCode == code && user.ExpirationCode > DateTime.UtcNow)
+            var allPermissions = Permissions.GenerateAllPermissions();
+            foreach (var perm in allPermissions.SelectMany(kvp => kvp.Value))
             {
-                user.VerificationCode = null;
-                user.ExpirationCode = null;
-                user.EmailConfirmed = true;
-                await userManager.UpdateAsync(user);
-                return new OkObjectResult(new { Message = "OTP Verified Successfully!" });
+                await roleManager.AddClaimAsync(role, new Claim(CustomClaimTypes.Permission, perm));
             }
 
-            return new BadRequestObjectResult("Invalid OR Expired OTP.");
+
+            context.UserRoles.Add(new IdentityUserRole<int>
+            {
+                UserId = user.Id,
+                RoleId = role.Id
+            });
+
+            await transaction.CommitAsync();
+
+            await ResendVerificationCodeAsync(user.Email);
+
+            return new OkObjectResult(new { Message = "User registered successfully" });
         }
-
-        public async Task<IActionResult> ResendVerificationCodeAsync(string email)
+        catch
         {
-            var user = await userManager.FindByEmailAsync(email);
-            if (user == null)
-                return new NotFoundObjectResult("User Not Found !");
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
 
-            var newCode = new Random().Next(100000, 999999).ToString();
-            user.VerificationCode = newCode;
-            user.ExpirationCode = DateTime.UtcNow.AddMinutes(10);
+    public async Task<IActionResult> LoginAsync(LoginDto model)
+    {
+        var user = await userManager.FindByEmailAsync(model.Email);
 
+        if (user == null || !await userManager.CheckPasswordAsync(user, model.Password))
+            return new UnauthorizedObjectResult("Invalid login attempt");
+
+        if (!await userManager.IsEmailConfirmedAsync(user))
+            return new UnauthorizedObjectResult(
+                "Email is not confirmed. Please verify your email before logging in.");
+
+        var token = await GenerateJwtToken(user);
+
+        var response = new LoginResponseDto();
+
+        response.Token = token;
+
+        if (user.RefreshTokens.Any(t => t.IsActive))
+        {
+            var activeRefreshToken = user.RefreshTokens.First(t => t.IsActive);
+            response.RefreshToken = activeRefreshToken.Token;
+            response.RefreshTokenExpiration = activeRefreshToken.ExpiresOn;
+        }
+        else
+        {
+            var refreshToken = GenerateRefreshToken();
+            response.RefreshToken = refreshToken.Token;
+            response.RefreshTokenExpiration = refreshToken.ExpiresOn;
+            user.RefreshTokens.Add(refreshToken);
             await userManager.UpdateAsync(user);
-
-            var htmlBody = HtmlTemplate.GetVerificationCodeEmailTemplate(newCode);
-
-            var message = new EmailMessage(
-                new List<string> { user.Email },
-                "Your New Verification Code",
-                htmlBody
-            );
-
-            await emailSender.SendEmailAsync(message);
-
-            return new OkObjectResult("OTP Resent Successfully :)");
         }
 
-        private async Task<string> GenerateJwtToken(User user)
+        return new OkObjectResult(response);
+    }
+
+    public async Task<IActionResult> ForgotPasswordAsync(string email)
+    {
+        var user = await userManager.FindByEmailAsync(email);
+        if (user == null)
+            return new NotFoundObjectResult("User Not Found !");
+
+        var code = new Random().Next(100000, 999999).ToString();
+        user.VerificationCode = code;
+        user.ExpirationCode = DateTime.UtcNow.AddMinutes(10);
+
+        await userManager.UpdateAsync(user);
+
+        var message = new EmailMessage(
+            new List<string> { email },
+            "OTP For Reset Password",
+            HtmlTemplate.GetVerificationCodeEmailTemplate(code)
+        );
+
+        await emailSender.SendEmailAsync(message);
+
+        return new OkObjectResult("OTP Sent Successfully :)");
+    }
+
+    public async Task<IActionResult> ResetPasswordAsync(string email, string currentPassword, string newPassword,
+        string newPasswordConfirm)
+    {
+        var user = await userManager.FindByEmailAsync(email);
+        if (user == null)
+            return new NotFoundObjectResult("User Not Found!");
+
+        if (newPassword != newPasswordConfirm)
         {
-            var jwtSettings = config.GetSection("Jwt");
-
-            var roles = await userManager.GetRolesAsync(user);
-
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim("companyId", user.CompanyId.ToString())
-            };
-
-            foreach (var role in roles)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role));
-
-                var roleEntity = await roleManager.Roles
-                    .FirstOrDefaultAsync(r => r.Name == role && r.CompanyId == user.CompanyId);
-
-                if (roleEntity != null)
-                {
-                    var roleClaims = await roleManager.GetClaimsAsync(roleEntity);
-                    claims.AddRange(roleClaims
-                        .Where(c => c.Type == CustomClaimTypes.Permission)
-                        .Select(c => new Claim(CustomClaimTypes.Permission, c.Value)));
-                }
-            }
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: jwtSettings["Issuer"],
-                audience: jwtSettings["Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddDays(Convert.ToInt32(jwtSettings["DurationInDays"])),
-                signingCredentials: creds);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return new BadRequestObjectResult("Passwords do not match");
         }
+
+        var result = await userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+
+        if (!result.Succeeded)
+            return new BadRequestObjectResult(result.Errors);
+
+        return new OkObjectResult("Password reset successfully!");
+    }
+
+    public async Task<IActionResult> VerifyEmailAsync(string email, string code)
+    {
+        var user = await userManager.FindByEmailAsync(email);
+        if (user == null)
+            return new NotFoundObjectResult("User Not Found!");
+
+        if (user.VerificationCode == code && user.ExpirationCode > DateTime.UtcNow)
+        {
+            user.VerificationCode = null;
+            user.ExpirationCode = null;
+            user.EmailConfirmed = true;
+            await userManager.UpdateAsync(user);
+            return new OkObjectResult(new { Message = "OTP Verified Successfully!" });
+        }
+
+        return new BadRequestObjectResult("Invalid OR Expired OTP.");
+    }
+
+    public async Task<IActionResult> ResendVerificationCodeAsync(string email)
+    {
+        var user = await userManager.FindByEmailAsync(email);
+        if (user == null)
+            return new NotFoundObjectResult("User Not Found !");
+
+        var newCode = new Random().Next(100000, 999999).ToString();
+        user.VerificationCode = newCode;
+        user.ExpirationCode = DateTime.UtcNow.AddMinutes(10);
+
+        await userManager.UpdateAsync(user);
+
+        var htmlBody = HtmlTemplate.GetVerificationCodeEmailTemplate(newCode);
+
+        var message = new EmailMessage(
+            new List<string> { user.Email },
+            "Your New Verification Code",
+            htmlBody
+        );
+
+        await emailSender.SendEmailAsync(message);
+
+        return new OkObjectResult("OTP Resent Successfully :)");
+    }
+
+    private async Task<string> GenerateJwtToken(User user)
+    {
+        var roles = await userManager.GetRolesAsync(user);
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email),
+            new Claim("companyId", user.CompanyId.ToString())
+        };
+
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+
+            var roleEntity = await roleManager.Roles
+                .FirstOrDefaultAsync(r => r.Name == role && r.CompanyId == user.CompanyId);
+
+            if (roleEntity != null)
+            {
+                var roleClaims = await roleManager.GetClaimsAsync(roleEntity);
+                claims.AddRange(roleClaims
+                    .Where(c => c.Type == CustomClaimTypes.Permission)
+                    .Select(c => new Claim(CustomClaimTypes.Permission, c.Value)));
+            }
+        }
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Value.Key));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: jwtSettings.Value.Issuer,
+            audience: jwtSettings.Value.Audience,
+            claims: claims,
+            expires: DateTime.Now.AddDays(Convert.ToInt32(jwtSettings.Value.DurationInDays)),
+            signingCredentials: creds);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private RefreshToken GenerateRefreshToken()
+    {
+        var randomNumber = new byte[32];
+        using var generator = new RNGCryptoServiceProvider();
+        generator.GetBytes(randomNumber);
+        return new RefreshToken()
+        {
+            Token = Convert.ToBase64String(randomNumber),
+            ExpiresOn = DateTime.UtcNow.AddDays(jwtSettings.Value.RefreshTokenDurationInDays),
+            CreatedOn = DateTime.UtcNow,
+        };
+    }
+
+    public async Task<IActionResult> RefreshTokenAsync(string token)
+    {
+        var user = await userManager.Users.FirstOrDefaultAsync(u => u.RefreshTokens.Any(t => t.Token == token));
+
+        if (user is null)
+            return new UnauthorizedObjectResult("Invalid token");
+
+        var refreshToken = user.RefreshTokens.Single(t => t.Token == token);
+
+        if (!refreshToken.IsActive)
+        {
+            return new UnauthorizedObjectResult("Inactive token");
+        }
+
+        refreshToken.RevokedOn = DateTime.UtcNow;
+
+        var newRefreshToken = GenerateRefreshToken();
+        user.RefreshTokens.Add(newRefreshToken);
+        await userManager.UpdateAsync(user);
+
+        var result = new LoginResponseDto()
+        {
+            Token = await GenerateJwtToken(user),
+            RefreshToken = newRefreshToken.Token,
+            RefreshTokenExpiration = newRefreshToken.ExpiresOn,
+        };
+
+        return new OkObjectResult(result);
+    }
+
+    public async Task<bool> RevokeTokenAsync(string token)
+    {
+        var user = await userManager.Users.FirstOrDefaultAsync(u => u.RefreshTokens.Any(t => t.Token == token));
+
+        if (user is null)
+            return false;
+
+        var refreshToken = user.RefreshTokens.Single(t => t.Token == token);
+
+        if (!refreshToken.IsActive)
+            return false;
+
+        refreshToken.RevokedOn = DateTime.UtcNow;
+
+        await userManager.UpdateAsync(user);
+
+        return true;
     }
 }

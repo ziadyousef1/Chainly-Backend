@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Chainly.Domain.Models
 {
     public class User : IdentityUser<int>
-    {  
+    {
         public string FullName { get; set; }
 
         public string? VerificationCode { get; set; }
@@ -18,5 +18,6 @@ namespace Chainly.Domain.Models
         public Company Company { get; set; }
         public string? ProfilePicture { get; set; }
 
+        public List<RefreshToken>? RefreshTokens { get; set; }
     }
 }

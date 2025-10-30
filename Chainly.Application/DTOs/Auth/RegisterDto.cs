@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 
-namespace Chainly.Application.Dtos
+namespace Chainly.Application.Dtos.Auth
 {
     public class RegisterDto
     {
