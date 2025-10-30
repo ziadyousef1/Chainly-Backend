@@ -132,6 +132,10 @@ public class AuthService(
 
         response.Token = token;
 
+        int refreshTokenDays = model.RememberMe
+            ? jwtSettings.Value.RefreshTokenDurationInDays * 2
+            : jwtSettings.Value.RefreshTokenDurationInDays;
+
         if (user.RefreshTokens.Any(t => t.IsActive))
         {
             var activeRefreshToken = user.RefreshTokens.First(t => t.IsActive);
@@ -140,7 +144,7 @@ public class AuthService(
         }
         else
         {
-            var refreshToken = GenerateRefreshToken();
+            var refreshToken = GenerateRefreshToken(refreshTokenDays);
             response.RefreshToken = refreshToken.Token;
             response.RefreshTokenExpiration = refreshToken.ExpiresOn;
             user.RefreshTokens.Add(refreshToken);
@@ -276,7 +280,7 @@ public class AuthService(
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    private RefreshToken GenerateRefreshToken()
+    private RefreshToken GenerateRefreshToken(int durationInDays)
     {
         var randomNumber = new byte[32];
         using var generator = new RNGCryptoServiceProvider();
@@ -284,7 +288,7 @@ public class AuthService(
         return new RefreshToken()
         {
             Token = Convert.ToBase64String(randomNumber),
-            ExpiresOn = DateTime.UtcNow.AddDays(jwtSettings.Value.RefreshTokenDurationInDays),
+            ExpiresOn = DateTime.UtcNow.AddDays(durationInDays),
             CreatedOn = DateTime.UtcNow,
         };
     }
@@ -305,7 +309,7 @@ public class AuthService(
 
         refreshToken.RevokedOn = DateTime.UtcNow;
 
-        var newRefreshToken = GenerateRefreshToken();
+        var newRefreshToken = GenerateRefreshToken(jwtSettings.Value.RefreshTokenDurationInDays);
         user.RefreshTokens.Add(newRefreshToken);
         await userManager.UpdateAsync(user);
 

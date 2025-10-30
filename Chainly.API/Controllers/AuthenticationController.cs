@@ -78,7 +78,7 @@ public class AuthenticationController(IAuthService authService) : BaseController
         return result;
     }
 
-    [HttpPost("revokeToken")]
+    [HttpPost("logout")]
     public async Task<IActionResult> RevokeToken([FromBody] RevokeToken model)
     {
         var token = model.Token ?? Request.Cookies["refreshToken"];
