@@ -20,6 +20,7 @@ using Chainly.Domain.Models;
 using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 using Chainly.Application.Dtos.Auth;
+using Chainly.Application.DTOs.Auth.Customer;
 
 namespace Chainly.Application.Services.Implementation;
 
@@ -115,22 +116,65 @@ public class AuthService(
         }
     }
 
-    public async Task<IActionResult> LoginAsync(LoginDto model)
+    public async Task<IActionResult> RegisterCustomerAsync(RegisterCustomerDto model)
+    {
+        if (model.Password != model.ConfirmPassword)
+            return new BadRequestObjectResult("Password and confirmation do not match");
+
+        var existingUser = await userManager.FindByEmailAsync(model.Email);
+        if (existingUser != null)
+            return new BadRequestObjectResult("Email is already registered.");
+
+        var user = new User
+        {
+            UserName = model.Email,
+            Email = model.Email,
+            FullName = model.FullName,
+            PhoneNumber = model.Phone,
+        };
+
+        if (model.ProfilePicture != null && model.ProfilePicture.Length > 0)
+        {
+            var uploadResult = await cloudStorageService.UploadAsync(
+                cloudStorageSettings.Value.Containers.Avatars,
+                model.ProfilePicture,
+                $"{Guid.NewGuid()}"
+            );
+
+            if (!uploadResult.Error)
+                user.ProfilePicture = uploadResult.Blob.Uri;
+        }
+
+        var result = await userManager.CreateAsync(user, model.Password);
+
+        if (!result.Succeeded)
+            return new BadRequestObjectResult(result.Errors);
+
+
+        await context.SaveChangesAsync();
+
+        await ResendVerificationCodeAsync(user.Email);
+
+        return new OkObjectResult(new { Message = "Customer registered successfully" });
+    }
+
+    public async Task<IActionResult> LoginAsync(LoginDto model, bool isCustomer)
     {
         var user = await userManager.FindByEmailAsync(model.Email);
 
-        if (user == null || !await userManager.CheckPasswordAsync(user, model.Password))
+        if (user == null || !await userManager.CheckPasswordAsync(user, model.Password) || (isCustomer && user.CompanyId is not null) || (!isCustomer && user.CompanyId is null))
             return new UnauthorizedObjectResult("Invalid login attempt");
 
         if (!await userManager.IsEmailConfirmedAsync(user))
             return new UnauthorizedObjectResult(
                 "Email is not confirmed. Please verify your email before logging in.");
 
-        var token = await GenerateJwtToken(user);
+        var token = await GenerateJwtToken(user, isCustomer);
 
         var response = new LoginResponseDto();
 
         response.Token = token;
+        response.fullName = user.FullName;
 
         int refreshTokenDays = model.RememberMe
             ? jwtSettings.Value.RefreshTokenDurationInDays * 2
@@ -240,7 +284,7 @@ public class AuthService(
         return new OkObjectResult("OTP Resent Successfully :)");
     }
 
-    private async Task<string> GenerateJwtToken(User user)
+    private async Task<string> GenerateJwtToken(User user, bool isCustomer)
     {
         var roles = await userManager.GetRolesAsync(user);
 
@@ -248,22 +292,26 @@ public class AuthService(
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim("companyId", user.CompanyId.ToString())
         };
 
-        foreach (var role in roles)
+        if (!isCustomer)
         {
-            claims.Add(new Claim(ClaimTypes.Role, role));
+            claims.Add(new Claim("companyId", user.CompanyId.ToString()));
 
-            var roleEntity = await roleManager.Roles
-                .FirstOrDefaultAsync(r => r.Name == role && r.CompanyId == user.CompanyId);
-
-            if (roleEntity != null)
+            foreach (var role in roles)
             {
-                var roleClaims = await roleManager.GetClaimsAsync(roleEntity);
-                claims.AddRange(roleClaims
-                    .Where(c => c.Type == CustomClaimTypes.Permission)
-                    .Select(c => new Claim(CustomClaimTypes.Permission, c.Value)));
+                claims.Add(new Claim(ClaimTypes.Role, role));
+
+                var roleEntity = await roleManager.Roles
+                    .FirstOrDefaultAsync(r => r.Name == role && r.CompanyId == user.CompanyId);
+
+                if (roleEntity != null)
+                {
+                    var roleClaims = await roleManager.GetClaimsAsync(roleEntity);
+                    claims.AddRange(roleClaims
+                        .Where(c => c.Type == CustomClaimTypes.Permission)
+                        .Select(c => new Claim(CustomClaimTypes.Permission, c.Value)));
+                }
             }
         }
 
@@ -293,7 +341,7 @@ public class AuthService(
         };
     }
 
-    public async Task<IActionResult> RefreshTokenAsync(string token)
+    public async Task<IActionResult> RefreshTokenAsync(string token, bool isCustomer)
     {
         var user = await userManager.Users.FirstOrDefaultAsync(u => u.RefreshTokens.Any(t => t.Token == token));
 
@@ -315,7 +363,8 @@ public class AuthService(
 
         var result = new LoginResponseDto()
         {
-            Token = await GenerateJwtToken(user),
+            fullName = user.UserName,
+            Token = await GenerateJwtToken(user, isCustomer),
             RefreshToken = newRefreshToken.Token,
             RefreshTokenExpiration = newRefreshToken.ExpiresOn,
         };

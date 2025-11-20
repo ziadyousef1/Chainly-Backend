@@ -1,5 +1,6 @@
 ﻿using Chainly.Application.Dtos.Auth;
 using Chainly.Application.DTOs.Auth;
+using Chainly.Application.DTOs.Auth.Customer;
 
 namespace Chainly.API.Controllers;
 
@@ -13,10 +14,16 @@ public class AuthenticationController(IAuthService authService) : BaseController
         return await authService.RegisterAsync(model);
     }
 
+    [HttpPost("customer/register")]
+    public async Task<IActionResult> Register(RegisterCustomerDto model)
+    {
+        return await authService.RegisterCustomerAsync(model);
+    }
+
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginDto model)
     {
-        var result = await authService.LoginAsync(model);
+        var result = await authService.LoginAsync(model, model.isCustomer);
 
         if (result is OkObjectResult { Value: LoginResponseDto payload } &&
             !string.IsNullOrEmpty(payload.RefreshToken))
@@ -65,10 +72,10 @@ public class AuthenticationController(IAuthService authService) : BaseController
     }
 
     [HttpGet("refreshToken")]
-    public async Task<IActionResult> RefreshToken()
+    public async Task<IActionResult> RefreshToken(bool isCustomer)
     {
         var refreshToken = Request.Cookies["refreshToken"];
-        var result = await authService.RefreshTokenAsync(refreshToken);
+        var result = await authService.RefreshTokenAsync(refreshToken, isCustomer);
 
         if (result is OkObjectResult { Value: LoginResponseDto payload })
         {

@@ -14,8 +14,8 @@ namespace Chainly.Domain.Models
 
         public string? VerificationCode { get; set; }
         public DateTime? ExpirationCode { get; set; }
-        public int CompanyId { get; set; }
-        public Company Company { get; set; }
+        public int? CompanyId { get; set; }
+        public Company? Company { get; set; }
         public string? ProfilePicture { get; set; }
 
         public List<RefreshToken>? RefreshTokens { get; set; }

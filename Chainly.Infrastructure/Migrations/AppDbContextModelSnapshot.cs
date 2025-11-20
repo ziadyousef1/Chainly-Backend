@@ -445,7 +445,7 @@ namespace Chainly.Data.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
-                    b.Property<int>("CompanyId")
+                    b.Property<int?>("CompanyId")
                         .HasColumnType("int");
 
                     b.Property<string>("ConcurrencyStamp")
@@ -739,8 +739,7 @@ namespace Chainly.Data.Migrations
                     b.HasOne("Chainly.Domain.Models.Company", "Company")
                         .WithMany("Users")
                         .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.OwnsMany("Chainly.Domain.Models.RefreshToken", "RefreshTokens", b1 =>
                         {

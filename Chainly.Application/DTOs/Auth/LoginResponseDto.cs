@@ -4,6 +4,7 @@ namespace Chainly.Application.Dtos;
 
 public class LoginResponseDto
 {
+    public string fullName { get; set; }
     public string Token { get; set; }
     [JsonIgnore]
     public string? RefreshToken { get; set; }
