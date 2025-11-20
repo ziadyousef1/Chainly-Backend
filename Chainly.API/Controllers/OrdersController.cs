@@ -40,6 +40,7 @@ public class OrdersController(IOrderService orderService) : BaseController
     }
 
     [HttpGet]
+    [Authorize(Permissions.Orders.View)]
     public async Task<IActionResult> GetOrders(int pageNumber = 1, int pageSize = 10, OrderStatus? status = null,
         string? search = null)
     {
@@ -47,7 +48,16 @@ public class OrdersController(IOrderService orderService) : BaseController
         return await orderService.GetPagedOrdersAsync(companyId, pageNumber, pageSize, status, search);
     }
 
+    [HttpGet("customer")]
+    [Authorize]
+    public async Task<IActionResult> GetCustomerOrders( int pageNumber = 1, int pageSize = 10, OrderStatus? status = null, string? search = null)
+    {
+        var customerId = GetUserId();
+        return await orderService.GetCustomerPagedOrdersAsync(customerId, pageNumber, pageSize, status, search);
+    }
+
     [HttpPost("create-order-tracking")]
+    [Authorize(Permissions.Orders.Create)]
     public async Task<IActionResult> CreateOrderTracking([FromBody] OrderTrackingDto orderTrackingDto)
     {
         if (orderTrackingDto == null)
@@ -62,11 +72,19 @@ public class OrdersController(IOrderService orderService) : BaseController
     }
 
     [HttpGet("{orderId}/tracking")]
+    [Authorize(Permissions.Orders.View)]
     public async Task<IActionResult> GetOrderTrackingByIdAsync(int orderId)
     {
         var companyId = GetCompanyId();
-        var result = await orderService.GetOrderTrackingByIdAsync(orderId, companyId);
-        return result;
+        return await orderService.GetOrderTrackingByIdAsync(orderId, companyId);
+    }
+
+    [HttpGet("{orderId}/customer/tracking")]
+    [Authorize]
+    public async Task<IActionResult> GetCustomerOrderTrackingByIdAsync(int orderId)
+    {
+        var customerId = GetUserId();
+        return await orderService.GetCustomerOrderTrackingByIdAsync(orderId, customerId);
     }
 
     [HttpPut("{orderId}")]
@@ -99,6 +117,7 @@ public class OrdersController(IOrderService orderService) : BaseController
 
 
     [HttpGet("summary")]
+    [Authorize(Permissions.Orders.View)]
     public async Task<IActionResult> GetOrdersSummary()
     {
         var companyId = GetCompanyId();
@@ -106,6 +125,7 @@ public class OrdersController(IOrderService orderService) : BaseController
     }
 
     [HttpGet("statuses")]
+    [Authorize]
     public IActionResult GetOrderStatuses()
     {
         var statuses = EnumHelper.ToDtoList<OrderStatus, EnumDto>((id, name) => new EnumDto { Id = id, Name = name });

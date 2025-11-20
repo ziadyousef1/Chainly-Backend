@@ -1,5 +1,6 @@
 ﻿using Chainly.Application.DTOs;
 using Chainly.Application.DTOs.Orders;
+using Chainly.Application.DTOs.Orders.Customer;
 using Chainly.Application.Services.Interfaces;
 using Chainly.Data;
 using Chainly.Domain.Constants;
@@ -12,35 +13,27 @@ using OfficeOpenXml;
 
 namespace Chainly.Application.Services.Implementation;
 
-public class OrderService : IOrderService
+public class OrderService(
+    IDeepSeekService deepSeekService,
+    AppDbContext dbContext,
+    IExternalApiService externalApiService)
+    : IOrderService
 {
-    private readonly IDeepSeekService _deepSeekService;
-    private readonly AppDbContext _dbContext;
-    private readonly IExternalApiService _externalApiService;
-
-
-    public OrderService(IDeepSeekService deepSeekService, AppDbContext dbContext,IExternalApiService externalApiService)
-    {
-        _deepSeekService = deepSeekService;
-        _dbContext = dbContext;
-        _externalApiService = externalApiService;
-    }
     public async Task<ServiceResponse> GetOrderUpdateAsync(string code, int companyId)
     {
-        var order = await _dbContext.Orders.FirstOrDefaultAsync(o => o.Code == code);
+        var order = await dbContext.Orders.FirstOrDefaultAsync(o => o.Code == code);
         if (order == null)
         {
             return new ServiceResponse("Order not found", false);
         }
 
-        var orderTracking = await _dbContext.OrderTracking
+        var orderTracking = await dbContext.OrderTracking
             .Where(o => o.OrderId == order.Id && o.CompanyId == companyId)
-            .Select(ot => new { ot.Status, ot.Timestamp ,ot.Notes})
+            .Select(ot => new { ot.Status, ot.Timestamp, ot.Notes })
             .ToListAsync();
         var orderTrackingJson = System.Text.Json.JsonSerializer.Serialize(orderTracking);
-        var message = await _deepSeekService.GenerateOrderUpdateMessageAsync(orderTrackingJson);
+        var message = await deepSeekService.GenerateOrderUpdateMessageAsync(orderTrackingJson);
         return new ServiceResponse(message, true);
-
     }
 
     public async Task<IActionResult> ImportOrdersFromExcelAsync(IFormFile file, int companyId)
@@ -81,7 +74,6 @@ public class OrderService : IOrderService
                 Email = emailText,
                 Phone = phoneText,
                 Code = codeText
-
             };
 
             ordersList.Add(order);
@@ -101,8 +93,8 @@ public class OrderService : IOrderService
             Code = dto.Code
         }).ToList();
 
-        await _dbContext.Orders.AddRangeAsync(orderEntities);
-        var savedCount = await _dbContext.SaveChangesAsync();
+        await dbContext.Orders.AddRangeAsync(orderEntities);
+        var savedCount = await dbContext.SaveChangesAsync();
 
         var result = new
         {
@@ -113,13 +105,15 @@ public class OrderService : IOrderService
 
         return new OkObjectResult(result);
     }
-    public async Task<IActionResult> GetPagedOrdersAsync(int companyId, int pageNumber = 1, int pageSize = 10, OrderStatus? status = null
+
+    public async Task<IActionResult> GetPagedOrdersAsync(int companyId, int pageNumber = 1, int pageSize = 10,
+        OrderStatus? status = null
         , string? searchTerm = null)
     {
         if (pageNumber <= 0) pageNumber = 1;
         if (pageSize <= 0) pageSize = 10;
 
-        var query = _dbContext.Orders
+        var query = dbContext.Orders
             .Where(o => o.CompanyId == companyId);
 
         if (status.HasValue)
@@ -165,9 +159,64 @@ public class OrderService : IOrderService
         return new OkObjectResult(response);
     }
 
-    public async Task<IActionResult> GetOrderTrackingByIdAsync(int orderId,int companyId)
+    public async Task<IActionResult> GetCustomerPagedOrdersAsync(int customerId, int pageNumber = 1, int pageSize = 10,
+        OrderStatus? status = null,
+        string? searchTerm = null)
     {
-        var order = await _dbContext.Orders
+        if (pageNumber <= 0) pageNumber = 1;
+        if (pageSize <= 0) pageSize = 10;
+
+        var customer = dbContext.Users.FirstOrDefault(u => u.Id == customerId);
+
+        var query = dbContext.Orders
+            .Where(o => o.Phone == customer.PhoneNumber || o.Email == customer.Email);
+
+        if (status.HasValue)
+        {
+            query = query.Where(o => o.Trackings.Any(t => t.Status == status.Value));
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(o =>
+                o.Code.Contains(searchTerm) ||
+                o.Company.Name.Contains(searchTerm));
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var orders = await query
+            .OrderBy(o => o.CompanyOrderId)
+            .Include(o => o.Trackings)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Select(o => new
+            {
+                Id = o.Id,
+                companyName = o.Company.Name,
+                code = o.Code,
+                lastStatus = o.Trackings
+                    .OrderByDescending(t => t.Timestamp)
+                    .Select(t => t.Status.ToString())
+                    .FirstOrDefault() ?? OrderStatus.Pending.ToString(),
+            })
+            .ToListAsync();
+
+        var response = new
+        {
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+            Items = orders
+        };
+
+        return new OkObjectResult(response);
+    }
+
+    public async Task<IActionResult> GetOrderTrackingByIdAsync(int orderId, int companyId)
+    {
+        var order = await dbContext.Orders
             .Include(o => o.Trackings)
             .ThenInclude(t => t.UpdatedByNavigation)
             .Where(o => o.CompanyOrderId == orderId && o.CompanyId == companyId)
@@ -195,12 +244,12 @@ public class OrderService : IOrderService
                     .ToList()
             })
             .FirstOrDefaultAsync();
-        
+
         if (order == null)
         {
             return new NotFoundObjectResult("Order not found.");
         }
-        
+
         foreach (var tracking in order.Trackings)
         {
             if (tracking.Latitude != 0 && tracking.Longitude != 0)
@@ -212,13 +261,59 @@ public class OrderService : IOrderService
                 tracking.Location = "Location not available";
             }
         }
-        
+
 
         return new OkObjectResult(order);
     }
+
+    public async Task<IActionResult> GetCustomerOrderTrackingByIdAsync(int orderId, int customerId)
+    {
+        var customer = dbContext.Users.FirstOrDefault(u => u.Id == customerId);
+
+        var order = await dbContext.Orders
+            .Include(o => o.Trackings)
+            .Where(o => (o.Phone == customer.PhoneNumber || o.Email == customer.Email) && o.Id == orderId)
+            .Select(o => new CustomerOrderDto()
+            {
+                CompanyName = o.Company.Name,
+                Code = o.Code,
+                Trackings = o.Trackings
+                    .OrderByDescending(t => t.Timestamp)
+                    .Select(t => new CustomerOrderTrackingDetailsDto()
+                    {
+                        Status = t.Status.ToString(),
+                        Timestamp = t.Timestamp.ToAppFormat(),
+                        Latitude = t.Latitude,
+                        Longitude = t.Longitude,
+                    })
+                    .ToList()
+            })
+            .FirstOrDefaultAsync();
+
+        if (order == null)
+        {
+            return new NotFoundObjectResult("Order not found.");
+        }
+
+        foreach (var tracking in order.Trackings)
+        {
+            if (tracking.Latitude != 0 && tracking.Longitude != 0)
+            {
+                tracking.Location = await GetLocationAsync(tracking.Latitude, tracking.Longitude);
+            }
+            else
+            {
+                tracking.Location = "Location not available";
+            }
+        }
+
+
+        return new OkObjectResult(order);
+    }
+
     public async Task<ServiceResponse> UpdateOrderAsync(int orderId, UpdateOrderDto dto)
     {
-        var order = await _dbContext.Orders.FirstOrDefaultAsync(o => o.CompanyOrderId == orderId);
+        var order = await dbContext.Orders.FirstOrDefaultAsync(o => o.CompanyOrderId == orderId);
         if (order == null)
             return new ServiceResponse("Order not found.", false);
 
@@ -226,12 +321,13 @@ public class OrderService : IOrderService
         order.Phone = dto.Phone;
         order.Email = dto.Email;
 
-        await _dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
         return new ServiceResponse("Order updated successfully.", true);
     }
+
     public async Task<ServiceResponse> UpdateOrderTrackingAsync(int trackingId, UpdateOrderTrackingDto dto)
     {
-        var tracking = await _dbContext.OrderTracking.FindAsync(trackingId);
+        var tracking = await dbContext.OrderTracking.FindAsync(trackingId);
         if (tracking == null)
             return new ServiceResponse("Order tracking not found.", false);
 
@@ -241,20 +337,21 @@ public class OrderService : IOrderService
         tracking.Notes = dto.Notes;
         tracking.Timestamp = DateTime.UtcNow;
 
-        await _dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
         return new ServiceResponse("Order tracking updated successfully.", true);
     }
 
 
     private async Task<string> GetLocationAsync(double latitude, double longitude)
     {
-        var url = $"https://api.geoapify.com/v1/geocode/reverse?lat={latitude}&lon={longitude}&apiKey=0e99ae334bed4b85b7f75ff56a8d1226";
-        var geoResponse = await _externalApiService.GetAsync<GeoapifyResponse>(url);
+        var url =
+            $"https://api.geoapify.com/v1/geocode/reverse?lat={latitude}&lon={longitude}&apiKey=0e99ae334bed4b85b7f75ff56a8d1226";
+        var geoResponse = await externalApiService.GetAsync<GeoapifyResponse>(url);
 
         return geoResponse?.Features?.FirstOrDefault()?.Properties?.Formatted ?? "Location not available";
     }
 
-    public async Task<IActionResult> CreateOrderAsync(OrderTrackingDto orderTrackingDto,int companyId,int UpdatedBy)
+    public async Task<IActionResult> CreateOrderAsync(OrderTrackingDto orderTrackingDto, int companyId, int UpdatedBy)
     {
         var orderTracking = new OrderTracking
         {
@@ -267,7 +364,7 @@ public class OrderService : IOrderService
             Timestamp = DateTime.UtcNow,
             UpdatedBy = UpdatedBy
         };
-        var order = await _dbContext.Orders
+        var order = await dbContext.Orders
             .Where(o => o.CompanyOrderId == orderTrackingDto.OrderId && o.CompanyId == companyId)
             .Select(o => new { o.Id })
             .FirstOrDefaultAsync();
@@ -276,22 +373,26 @@ public class OrderService : IOrderService
         {
             return new BadRequestObjectResult("Order does not exist.");
         }
-        var orderTarckingExists = _dbContext.OrderTracking.Any(ot => ot.OrderId == orderTrackingDto.OrderId && ot.CompanyId == companyId && ot.Status == orderTrackingDto.Status);
+
+        var orderTarckingExists = dbContext.OrderTracking.Any(ot =>
+            ot.OrderId == orderTrackingDto.OrderId && ot.CompanyId == companyId &&
+            ot.Status == orderTrackingDto.Status);
         if (orderTarckingExists)
         {
             return new BadRequestObjectResult("Order tracking with the same status already exists.");
         }
+
         orderTracking.OrderId = order.Id;
-        await _dbContext.OrderTracking.AddAsync(orderTracking);
-        await _dbContext.SaveChangesAsync();
+        await dbContext.OrderTracking.AddAsync(orderTracking);
+        await dbContext.SaveChangesAsync();
         return new OkObjectResult("Order tracking created successfully.");
     }
 
     public async Task<IActionResult> GetOrdersSummaryAsync(int companyId)
     {
-        var summary = await _dbContext.Orders
+        var summary = await dbContext.Orders
             .Where(o => o.CompanyId == companyId)
-            .GroupBy(o => 1) 
+            .GroupBy(o => 1)
             .Select(g => new
             {
                 DeliveredOrders = g.Count(o => o.Trackings.Any(t => t.Status == OrderStatus.Delivered)),
