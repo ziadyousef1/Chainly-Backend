@@ -10,20 +10,14 @@ namespace Chainly.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class OrdersController : BaseController
+public class OrdersController(IOrderService orderService) : BaseController
 {
-    private readonly IOrderService _orderService;
-
-    public OrdersController(IOrderService orderService)
-    {
-        _orderService = orderService;
-    }
-
     [HttpGet("{code}/update")]
+    [Authorize]
     public async Task<IActionResult> GetOrderUpdate(string code)
     {
         var companyId = GetCompanyId();
-        var response = await _orderService.GetOrderUpdateAsync(code,companyId);
+        var response = await orderService.GetOrderUpdateAsync(code,companyId);
         if (!response.IsSuccess)
         {
             return NotFound(response.Message);
@@ -42,7 +36,7 @@ public class OrdersController : BaseController
         if (!file.FileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
             return BadRequest("Only Excel files (.xlsx) are supported.");
         var companyId = GetCompanyId();
-        return await _orderService.ImportOrdersFromExcelAsync(file, companyId);
+        return await orderService.ImportOrdersFromExcelAsync(file, companyId);
     }
 
     [HttpGet]
@@ -50,7 +44,7 @@ public class OrdersController : BaseController
         string? search = null)
     {
         var companyId = GetCompanyId();
-        return await _orderService.GetPagedOrdersAsync(companyId, pageNumber, pageSize, status, search);
+        return await orderService.GetPagedOrdersAsync(companyId, pageNumber, pageSize, status, search);
     }
 
     [HttpPost("create-order-tracking")]
@@ -64,14 +58,14 @@ public class OrdersController : BaseController
         var companyId = GetCompanyId();
         var updatedBy = GetUserId();
 
-        return await _orderService.CreateOrderAsync(orderTrackingDto, companyId, updatedBy);
+        return await orderService.CreateOrderAsync(orderTrackingDto, companyId, updatedBy);
     }
 
     [HttpGet("{orderId}/tracking")]
     public async Task<IActionResult> GetOrderTrackingByIdAsync(int orderId)
     {
         var companyId = GetCompanyId();
-        var result = await _orderService.GetOrderTrackingByIdAsync(orderId, companyId);
+        var result = await orderService.GetOrderTrackingByIdAsync(orderId, companyId);
         return result;
     }
 
@@ -82,7 +76,7 @@ public class OrdersController : BaseController
         if (dto == null)
             return BadRequest("Invalid order data.");
 
-        var result = await _orderService.UpdateOrderAsync(orderId, dto);
+        var result = await orderService.UpdateOrderAsync(orderId, dto);
         if (!result.IsSuccess)
             return BadRequest(result.Message);
 
@@ -96,7 +90,7 @@ public class OrdersController : BaseController
         if (dto == null)
             return BadRequest("Invalid tracking data.");
 
-        var result = await _orderService.UpdateOrderTrackingAsync(trackingId, dto);
+        var result = await orderService.UpdateOrderTrackingAsync(trackingId, dto);
         if (!result.IsSuccess)
             return BadRequest(result.Message);
 
@@ -108,7 +102,7 @@ public class OrdersController : BaseController
     public async Task<IActionResult> GetOrdersSummary()
     {
         var companyId = GetCompanyId();
-        return await _orderService.GetOrdersSummaryAsync(companyId);
+        return await orderService.GetOrdersSummaryAsync(companyId);
     }
 
     [HttpGet("statuses")]

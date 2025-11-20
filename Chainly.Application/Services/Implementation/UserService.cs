@@ -3,6 +3,7 @@ using Chainly.Application.Interfaces;
 using Chainly.Data;
 using Chainly.Domain.Constants;
 using Chainly.Domain.Models;
+using Chainly.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -200,19 +201,12 @@ public class UserService(UserManager<User> userManager, AppDbContext context, IH
 
         var userProfile = new UserProfileDto
         {
-            ProfilePicture = user.ProfilePicture ?? GetDefaultAvatar(),
+            ProfilePicture = user.ProfilePicture ?? AvatarHelper.GetDefaultAvatar(accessor),
             Name = user.FullName,
             Email = user.Email,
             CompanyName = user.Company?.Name,
         };
 
         return new OkObjectResult(userProfile);
-    }
-
-    public string GetDefaultAvatar()
-    {
-        var request = accessor.HttpContext?.Request;
-        var baseUrl = $"{request.Scheme}://{request.Host}";
-        return $"{baseUrl}{DefaultAssets.DefaultCompanyAvatar}";
     }
 }

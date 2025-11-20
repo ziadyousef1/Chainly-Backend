@@ -38,6 +38,7 @@ namespace Chainly.Application.Extensions
             services.AddScoped<ILoggingService, LoggingService>();
             services.AddScoped<IMaterialService, MaterialService>();
             services.AddScoped<ICloudStorageService, CloudStorageService>();
+            services.AddScoped<ICustomerService, CustomerService>();
 
             services.AddHttpClient();
             services.AddScoped<IExternalApiService, ExternalApiService>();
