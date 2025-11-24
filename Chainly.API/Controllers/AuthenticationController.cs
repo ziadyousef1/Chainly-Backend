@@ -9,13 +9,13 @@ namespace Chainly.API.Controllers;
 public class AuthenticationController(IAuthService authService) : BaseController
 {
     [HttpPost("register")]
-    public async Task<IActionResult> Register(RegisterDto model)
+    public async Task<IActionResult> Register([FromForm] RegisterDto model)
     {
         return await authService.RegisterAsync(model);
     }
 
     [HttpPost("customer/register")]
-    public async Task<IActionResult> Register(RegisterCustomerDto model)
+    public async Task<IActionResult> Register([FromForm] RegisterCustomerDto model)
     {
         return await authService.RegisterCustomerAsync(model);
     }
