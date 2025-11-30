@@ -12,6 +12,27 @@ public class ProductionSessionService(AppDbContext context) : IProductionSession
 {
     public async Task<IActionResult> CreateSessionAsync(CreateProductionSessionDto request, int companyId)
     {
+        var existingSession = await context.ProductionSessions
+            .FirstOrDefaultAsync(s => 
+                s.ProductId == request.ProductId && 
+                s.CompanyId == companyId);
+
+        if (existingSession != null)
+        {
+            existingSession.Status = request.Status;
+            existingSession.MaxDefects = request.MaxDefects;
+            existingSession.Timestamp = request.Timestamp;
+            existingSession.ProductionLineId = request.ProductionLineId;
+
+            context.ProductionSessions.Update(existingSession);
+            await context.SaveChangesAsync();
+
+            return new OkObjectResult(new
+            {
+                message = "Production session updated successfully",
+            });
+        }
+
         var session = new ProductionSession
         {
             ProductId = request.ProductId,
@@ -25,12 +46,10 @@ public class ProductionSessionService(AppDbContext context) : IProductionSession
 
         context.ProductionSessions.Add(session);
         await context.SaveChangesAsync();
-        
 
         return new OkObjectResult(new
         {
             message = "Production session created successfully",
-            
         });
     }
 }
