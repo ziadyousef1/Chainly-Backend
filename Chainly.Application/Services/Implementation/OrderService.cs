@@ -404,4 +404,79 @@ public class OrderService(
 
         return new OkObjectResult(summary);
     }
+
+    public async Task<IActionResult> GetOrdersMonthlyStatsAsync(int companyId, int? year = null)
+    {
+        var targetYear = year ?? DateTime.UtcNow.Year;
+
+        var orders = await dbContext.Orders
+            .Where(o => o.CompanyId == companyId)
+            .Select(o => new
+            {
+                OrderId = o.Id,
+                CreatedAt = o.Trackings
+                    .OrderBy(t => t.Timestamp)
+                    .Select(t => t.Timestamp)
+                    .FirstOrDefault()
+            })
+            .Where(o => o.CreatedAt != default)
+            .ToListAsync();
+
+        if (orders.Count == 0)
+        {
+            return new OkObjectResult(new
+            {
+                Message = "No orders found",
+                Monthly = new int[12],
+                Years = Array.Empty<int>()
+            });
+        }
+
+        var availableYears = orders
+            .GroupBy(o => o.CreatedAt.Year)
+            .Select(g => g.Key)
+            .OrderBy(y => y)
+            .ToList();
+
+        var monthlyCounts = orders
+            .Where(o => o.CreatedAt.Year == targetYear)
+            .GroupBy(o => o.CreatedAt.Month)
+            .Select(g => new { Month = g.Key, Count = g.Count() })
+            .ToList();
+
+        var monthlyArray = Enumerable.Range(1, 12)
+            .Select(m => monthlyCounts.FirstOrDefault(x => x.Month == m)?.Count ?? 0)
+            .ToArray();
+
+        var result = new
+        {
+            Year = targetYear,
+            Monthly = monthlyArray,
+            Years = availableYears
+        };
+
+        return new OkObjectResult(result);
+    }
+    public async Task<IActionResult> DeleteOrderAsync(int orderId, int companyId)
+    {
+        var order = await dbContext.Orders
+            .Include(o => o.Trackings)
+            .FirstOrDefaultAsync(o => o.Id == orderId && o.CompanyId == companyId);
+
+        if (order == null)
+        {
+            return new NotFoundObjectResult("Order not found.");
+        }
+
+        if (order.Trackings.Count != 0)
+        {
+            dbContext.OrderTracking.RemoveRange(order.Trackings);
+        }
+
+        dbContext.Orders.Remove(order);
+
+        await dbContext.SaveChangesAsync();
+
+        return new ObjectResult("Order deleted successfully.");
+    }
 }

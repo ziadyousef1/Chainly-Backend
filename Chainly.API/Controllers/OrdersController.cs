@@ -132,4 +132,18 @@ public class OrdersController(IOrderService orderService) : BaseController
 
         return new OkObjectResult(statuses);
     }
+    [HttpGet("monthly-stats")]
+    [Authorize(Permissions.Orders.View)]
+    public async Task<IActionResult> GetOrdersMonthlyStats(int? year = null)
+    {
+        var companyId = GetCompanyId();
+        return await orderService.GetOrdersMonthlyStatsAsync(companyId, year);
+    }
+    [HttpDelete("{orderId}")]
+    [Authorize(Permissions.Orders.Delete)]
+    public async Task<IActionResult> DeleteOrder(int orderId)
+    {
+        var companyId = GetCompanyId();
+        return await orderService.DeleteOrderAsync(orderId, companyId);
+    }
 }

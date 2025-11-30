@@ -23,4 +23,6 @@ public interface IOrderService
     Task<ServiceResponse> UpdateOrderAsync(int orderId, UpdateOrderDto dto);
     Task<ServiceResponse> UpdateOrderTrackingAsync(int trackingId, UpdateOrderTrackingDto dto);
     Task<IActionResult> GetOrdersSummaryAsync(int companyId);
+    Task<IActionResult> GetOrdersMonthlyStatsAsync(int companyId, int? year = null);
+    Task<IActionResult> DeleteOrderAsync(int orderId, int companyId);
 }
