@@ -13,7 +13,7 @@ public interface IReportService
         DateTime? endDate = null, int pageNumber = 1, int pageSize = 10);
     Task<IActionResult> GetMonthlyReportSummaryAsync(int companyId, int? month = null, int? year = null,
         int pageNumber = 1, int pageSize = 10);
-    Task<IActionResult> IncrementGoodProductsAsync(int companyId, int reportId, int count = 1);
+    Task<IActionResult> AddGoodProductsAsync(int companyId, int reportId, NonDefectiveProductDto[] nonDefectiveProducts);
     Task<IActionResult> AddDefectiveProductsAsync(int companyId, int reportId, DefectiveProductDto[] defectiveProducts);
     Task<IActionResult> CreateEmptySessionAsync(int companyId, string sessionId, int productionLineId);
 }

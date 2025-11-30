@@ -57,11 +57,12 @@ public class ReportsController(IReportService reportService, IAiInsightsService 
         return await reportService.GetMonthlyReportSummaryAsync(companyId, month, year, pageNumber, pageSize);
     }
 
-    [HttpPost("{reportId}/increment-good-products")]
-    public async Task<IActionResult> IncrementGoodProducts(int reportId, [FromQuery] int count = 1)
+    [HttpPost("{reportId}/add-good-products")]
+    public async Task<IActionResult> AddGoodProducts(int reportId,
+        [FromBody] NonDefectiveProductDto[] nonDefectiveProducts)
     {
         var companyId = GetCompanyId();
-        return await reportService.IncrementGoodProductsAsync(companyId, reportId, count);
+        return await reportService.AddGoodProductsAsync(companyId, reportId, nonDefectiveProducts);
     }
 
     [HttpPost("{reportId}/add-defective-products")]

@@ -19,6 +19,7 @@ namespace Chainly.Application.Tests
 
             return new AppDbContext(options);
         }
+
         [Fact]
         public async Task GetSuppliersAsync_ReturnsSuppliersSortedByDistanceAsc()
         {
@@ -57,7 +58,7 @@ namespace Chainly.Application.Tests
             context.Suppliers.AddRange(supplierNear, supplierFar);
             context.SaveChanges();
 
-            var service = new SupplierService(context, null);
+            var service = new SupplierService(context, null, null);
 
             // Act
             var result = await service.GetSuppliersAsync(company.Id, 1, 10, "asc");
@@ -114,7 +115,7 @@ namespace Chainly.Application.Tests
             context.Suppliers.AddRange(supplierNear, supplierFar);
             context.SaveChanges();
 
-            var service = new SupplierService(context, null);
+            var service = new SupplierService(context, null, null);
 
             // Act
             var result = await service.GetSuppliersAsync(company.Id, 1, 10, "desc");
@@ -135,7 +136,7 @@ namespace Chainly.Application.Tests
         {
             // Arrange
             var context = GetDbContext(nameof(GetSuppliersAsync_ReturnsNotFound_WhenCompanyDoesNotExist));
-            var service = new SupplierService(context, null);
+            var service = new SupplierService(context, null, null);
 
             // Act
             var result = await service.GetSuppliersAsync(999, 1, 10, "asc");
@@ -183,7 +184,7 @@ namespace Chainly.Application.Tests
             await context.SupplierMaterials.AddRangeAsync(sm1, sm2);
             await context.SaveChangesAsync();
 
-            var service = new SupplierService(context, null);
+            var service = new SupplierService(context, null, null);
 
             // Act
             var result = await service.GetSupplierAsync(supplier.Id, company.Id, 1, 10, null);
@@ -207,7 +208,7 @@ namespace Chainly.Application.Tests
         public async Task GetSupplierAsync_SupplierNotFound_ReturnsNotFound()
         {
             var context = GetDbContext(nameof(GetSupplierAsync_SupplierNotFound_ReturnsNotFound));
-            var service = new SupplierService(context, null);
+            var service = new SupplierService(context, null, null);
 
             var result = await service.GetSupplierAsync(9999, 1, 1, 10, null);
             var notFound = Assert.IsType<NotFoundObjectResult>(result);
@@ -231,7 +232,7 @@ namespace Chainly.Application.Tests
             await context.Suppliers.AddAsync(supplier);
             await context.SaveChangesAsync();
 
-            var service = new SupplierService(context, null);
+            var service = new SupplierService(context, null, null);
 
             // Act (companyId 999 does not exist)
             var result = await service.GetSupplierAsync(supplier.Id, 999, 1, 10, null);
@@ -274,7 +275,7 @@ namespace Chainly.Application.Tests
             );
             await context.SaveChangesAsync();
 
-            var service = new SupplierService(context, null);
+            var service = new SupplierService(context, null, null);
 
             // Act: search for "steel" (case-insensitive)
             var result = await service.GetSupplierAsync(supplier.Id, company.Id, 1, 10, "steel");
@@ -324,7 +325,7 @@ namespace Chainly.Application.Tests
             );
             await context.SaveChangesAsync();
 
-            var service = new SupplierService(context, null);
+            var service = new SupplierService(context, null, null);
 
             // Act page 1 (pageSize=2)
             var result1 = await service.GetSupplierAsync(supplier.Id, company.Id, 1, 2, null);
@@ -352,7 +353,7 @@ namespace Chainly.Application.Tests
         {
             // Arrange
             var context = GetDbContext(nameof(CreateSupplierAsync_ValidCreate_AddsSupplier));
-            var service = new SupplierService(context, null);
+            var service = new SupplierService(context, null, null);
 
             var company = new Company { Id = 1, Name = "Test Company" };
             context.Companies.Add(company);
@@ -389,13 +390,12 @@ namespace Chainly.Application.Tests
         }
 
 
-
         [Fact]
         public async Task CreateSupplierAsync_CompanyNotFound_ReturnsNotFound()
         {
             // Arrange
             var context = GetDbContext(nameof(CreateSupplierAsync_CompanyNotFound_ReturnsNotFound));
-            var service = new SupplierService(context, null);
+            var service = new SupplierService(context, null, null);
 
             var dto = new SupplierCreateDto
             {
@@ -430,7 +430,7 @@ namespace Chainly.Application.Tests
 
             await context.SaveChangesAsync();
 
-            var service = new SupplierService(context, null);
+            var service = new SupplierService(context, null, null);
 
             var dto = new SupplierCreateDto
             {
@@ -498,10 +498,11 @@ namespace Chainly.Application.Tests
             await context.Suppliers.AddAsync(supplier);
             await context.SaveChangesAsync();
 
-            await context.SupplierMaterials.AddAsync(new SupplierMaterial { SupplierId = supplier.Id, MaterialId = initialMaterial.Id });
+            await context.SupplierMaterials.AddAsync(new SupplierMaterial
+                { SupplierId = supplier.Id, MaterialId = initialMaterial.Id });
             await context.SaveChangesAsync();
 
-            var service = new SupplierService(context, null);
+            var service = new SupplierService(context, null, null);
 
             var dto = new SupplierUpdateDto
             {
@@ -522,7 +523,8 @@ namespace Chainly.Application.Tests
             using var doc = JsonDocument.Parse(json);
             Assert.Equal("Supplier updated successfully", doc.RootElement.GetProperty("Message").GetString());
 
-            var updated = await context.Suppliers.Include(s => s.SupplierMaterials).FirstAsync(s => s.Id == supplier.Id);
+            var updated = await context.Suppliers.Include(s => s.SupplierMaterials)
+                .FirstAsync(s => s.Id == supplier.Id);
             Assert.Equal("UpdatedName", updated.Name);
             Assert.Equal("NewF", updated.FacilityType);
             // materials replaced
@@ -534,7 +536,7 @@ namespace Chainly.Application.Tests
         public async Task UpdateSupplierAsync_SupplierNotFound_ReturnsNotFound()
         {
             var context = GetDbContext(nameof(UpdateSupplierAsync_SupplierNotFound_ReturnsNotFound));
-            var service = new SupplierService(context, null);
+            var service = new SupplierService(context, null, null);
 
             var dto = new SupplierUpdateDto { Name = "X", Latitude = 1, Longitude = 1, MaterialIds = null };
             var result = await service.UpdateSupplierAsync(9999, dto, 1);
@@ -561,7 +563,7 @@ namespace Chainly.Application.Tests
             await context.Suppliers.AddAsync(supplier);
             await context.SaveChangesAsync();
 
-            var service = new SupplierService(context, null);
+            var service = new SupplierService(context, null, null);
             var dto = new SupplierUpdateDto { Name = "X", Latitude = 1, Longitude = 1, MaterialIds = null };
 
             var result = await service.UpdateSupplierAsync(supplier.Id, dto, companyId: 1);
@@ -592,7 +594,7 @@ namespace Chainly.Application.Tests
             await context.Suppliers.AddAsync(supplier);
             await context.SaveChangesAsync();
 
-            var service = new SupplierService(context, null);
+            var service = new SupplierService(context, null, null);
             var result = await service.DeleteSupplierAsync(supplier.Id, company.Id);
             var ok = Assert.IsType<OkObjectResult>(result);
             Assert.Equal("Supplier deleted successfully", ok.Value);
@@ -605,7 +607,7 @@ namespace Chainly.Application.Tests
         public async Task DeleteSupplierAsync_SupplierNotFound_ReturnsNotFound()
         {
             var context = GetDbContext(nameof(DeleteSupplierAsync_SupplierNotFound_ReturnsNotFound));
-            var service = new SupplierService(context, null);
+            var service = new SupplierService(context, null, null);
 
             var result = await service.DeleteSupplierAsync(9999, 1);
             Assert.IsType<NotFoundObjectResult>(result);
@@ -632,7 +634,7 @@ namespace Chainly.Application.Tests
             await context.Suppliers.AddAsync(supplier);
             await context.SaveChangesAsync();
 
-            var service = new SupplierService(context, null);
+            var service = new SupplierService(context, null, null);
             var result = await service.DeleteSupplierAsync(supplier.Id, company.Id);
             Assert.IsType<NotFoundObjectResult>(result);
         }

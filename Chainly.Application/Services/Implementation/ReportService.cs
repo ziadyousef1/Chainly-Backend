@@ -260,7 +260,10 @@ public class ReportService(AppDbContext context) : IReportService
         return new OkObjectResult(result);
     }
 
-    public async Task<IActionResult> IncrementGoodProductsAsync(int companyId, int reportId, int count = 1)
+    public async Task<IActionResult> AddGoodProductsAsync(
+        int companyId,
+        int reportId,
+        NonDefectiveProductDto[] nonDefectiveProducts)
     {
         var report = await context.Reports
             .Include(r => r.ProductionLine)
@@ -269,11 +272,39 @@ public class ReportService(AppDbContext context) : IReportService
         if (report == null || report.ProductionLine.CompanyId != companyId)
             return new NotFoundObjectResult("Report not found.");
 
-        report.GoodProducts += count;
+        var incomingProductIds = nonDefectiveProducts
+            .Select(p => p.Id)
+            .Distinct()
+            .ToList();
+
+        var existingProducts = await context.NonDefectiveProducts
+            .Where(p => p.ReportId == reportId && incomingProductIds.Contains(p.ProductId))
+            .Select(p => p.ProductId)
+            .ToListAsync();
+
+        var newProductIds = incomingProductIds
+            .Except(existingProducts)
+            .ToList();
+
+        var newEntities = newProductIds
+            .Select(id => new NonDefectiveProduct
+            {
+                ReportId = reportId,
+                ProductId = id
+            })
+            .ToList();
+
+        if (newEntities.Any())
+        {
+            await context.NonDefectiveProducts.AddRangeAsync(newEntities);
+            report.GoodProducts += newEntities.Count;
+        }
+
         await context.SaveChangesAsync();
 
-        return new OkObjectResult("Good products incremented successfully.");
+        return new OkObjectResult("Good products updated successfully.");
     }
+
 
     public async Task<IActionResult> AddDefectiveProductsAsync(int companyId, int reportId,
         DefectiveProductDto[] defectiveProducts)

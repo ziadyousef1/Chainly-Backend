@@ -25,4 +25,8 @@ namespace Chainly.Application.DTOs
 
         [JsonPropertyName("detected_at")] public string DetectedAt { get; set; } = string.Empty;
     }
+    public class NonDefectiveProductDto
+    {
+        [JsonPropertyName("id")] public string Id { get; set; } = string.Empty;
+    }
 }
