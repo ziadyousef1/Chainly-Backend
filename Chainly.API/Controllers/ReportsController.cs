@@ -56,4 +56,26 @@ public class ReportsController(IReportService reportService, IAiInsightsService 
         var companyId = GetCompanyId();
         return await reportService.GetMonthlyReportSummaryAsync(companyId, month, year, pageNumber, pageSize);
     }
+
+    [HttpPost("{reportId}/increment-good-products")]
+    public async Task<IActionResult> IncrementGoodProducts(int reportId, [FromQuery] int count = 1)
+    {
+        var companyId = GetCompanyId();
+        return await reportService.IncrementGoodProductsAsync(companyId, reportId, count);
+    }
+
+    [HttpPost("{reportId}/add-defective-products")]
+    public async Task<IActionResult> AddDefectiveProducts(int reportId,
+        [FromBody] DefectiveProductDto[] defectiveProducts)
+    {
+        var companyId = GetCompanyId();
+        return await reportService.AddDefectiveProductsAsync(companyId, reportId, defectiveProducts);
+    }
+
+    [HttpPost("create-empty-session")]
+    public async Task<IActionResult> CreateEmptySession([FromQuery] string sessionId, [FromQuery] int productionLineId)
+    {
+        var companyId = GetCompanyId();
+        return await reportService.CreateEmptySessionAsync(companyId, sessionId, productionLineId);
+    }
 }

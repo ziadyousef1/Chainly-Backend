@@ -8,6 +8,7 @@ using Chainly.Domain.Models;
 using Chainly.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
 using DefectiveProductDto = Chainly.Application.DTOs.DefectiveProductDto;
 
 namespace Chainly.Application.Services.Implementation;
@@ -131,7 +132,7 @@ public class ReportService(AppDbContext context) : IReportService
             TotalProducts = report.TotalProducts,
             DefectiveCount = report.DefectiveProductsCount,
             NonDefectiveCount = report.GoodProducts,
-            ReportDate = report.ReportDate,
+            ReportDate = report.ReportDate.ToAppFormat(),
             ProductionLine = new ProductionLineDto
             {
                 Id = report.ProductionLineId,
@@ -257,5 +258,73 @@ public class ReportService(AppDbContext context) : IReportService
         };
 
         return new OkObjectResult(result);
+    }
+
+    public async Task<IActionResult> IncrementGoodProductsAsync(int companyId, int reportId, int count = 1)
+    {
+        var report = await context.Reports
+            .Include(r => r.ProductionLine)
+            .FirstOrDefaultAsync(r => r.Id == reportId);
+
+        if (report == null || report.ProductionLine.CompanyId != companyId)
+            return new NotFoundObjectResult("Report not found.");
+
+        report.GoodProducts += count;
+        await context.SaveChangesAsync();
+
+        return new OkObjectResult("Good products incremented successfully.");
+    }
+
+    public async Task<IActionResult> AddDefectiveProductsAsync(int companyId, int reportId,
+        DefectiveProductDto[] defectiveProducts)
+    {
+        var report = await context.Reports
+            .Include(r => r.ProductionLine)
+            .FirstOrDefaultAsync(r => r.Id == reportId);
+
+        if (report == null || report.ProductionLine.CompanyId != companyId)
+            return new NotFoundObjectResult(new { message = "Report not found." });
+
+        var newDefective = defectiveProducts.Select(d => new DefectiveProduct
+        {
+            ReportId = reportId,
+            ProductId = d.Id,
+            Time = DateTime.Parse(d.DetectedAt)
+        });
+
+        await context.DefectiveProducts.AddRangeAsync(newDefective);
+        await context.SaveChangesAsync();
+
+        return new OkObjectResult("Defective products added successfully.");
+    }
+
+    public async Task<IActionResult> CreateEmptySessionAsync(int companyId, string sessionId, int productionLineId)
+    {
+        var exists = await context.Reports
+            .FirstOrDefaultAsync(r => r.SessionId == sessionId);
+
+        if (exists != null)
+            return new ObjectResult(new { message = "Session already exists.", reportId = exists.Id });
+
+        var productionLine = await context.ProductionLines
+            .FirstOrDefaultAsync(p => p.Id == productionLineId);
+
+        if (productionLine == null || productionLine.CompanyId != companyId)
+        {
+            return new NotFoundObjectResult("Production line not found or does not belong to the company.");
+        }
+
+        var report = new Report
+        {
+            SessionId = sessionId,
+            ProductionLineId = productionLineId,
+            ReportDate = DateTime.UtcNow,
+            GoodProducts = 0
+        };
+
+        await context.Reports.AddAsync(report);
+        await context.SaveChangesAsync();
+
+        return new OkObjectResult(new { message = "Session created successfully.", reportId = report.Id });
     }
 }
