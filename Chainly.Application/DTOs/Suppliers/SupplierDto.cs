@@ -15,5 +15,6 @@ namespace Chainly.Application.DTOs.Suppliers
         public string FacilityType { get; set; } = string.Empty;
         public string Sector { get; set; } = string.Empty;
         public string Distance { get; set; } = string.Empty;
+        public string Location { get; set; } = string.Empty;
     }
 }

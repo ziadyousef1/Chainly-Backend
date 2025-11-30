@@ -1,4 +1,5 @@
-﻿using Chainly.Application.DTOs.Materials;
+﻿using Chainly.Application.DTOs;
+using Chainly.Application.DTOs.Materials;
 using Chainly.Application.DTOs.Suppliers;
 using Chainly.Application.Services.Interfaces;
 using Chainly.Data;
@@ -10,7 +11,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Chainly.Application.Services.Implementation;
 
-public class SupplierService(AppDbContext context, ISupplierImportService supplierImportService)
+public class SupplierService(
+    AppDbContext context,
+    ISupplierImportService supplierImportService,
+    IExternalApiService externalApiService)
     : ISupplierService
 {
     public async Task<IActionResult> GetSuppliersAsync(int companyId, int pageNumber = 1, int pageSize = 10,
@@ -44,7 +48,8 @@ public class SupplierService(AppDbContext context, ISupplierImportService suppli
                     company.LocationLatitude,
                     company.LocationLongitude,
                     s.LocationLatitude,
-                    s.LocationLongitude)
+                    s.LocationLongitude),
+                Location = GetLocationAsync(s.LocationLatitude, s.LocationLongitude).Result
             })
             .ToList();
 
@@ -69,7 +74,8 @@ public class SupplierService(AppDbContext context, ISupplierImportService suppli
         {
             s.Id,
             s.Name,
-            Distance = $"{Math.Round(s.NumericDistance, 2)} Km"
+            Distance = $"{Math.Round(s.NumericDistance, 2)} Km",
+            s.Location
         });
 
         return new OkObjectResult(new
@@ -138,7 +144,8 @@ public class SupplierService(AppDbContext context, ISupplierImportService suppli
                 Sector = supplier.Sector,
                 Latitude = supplier.LocationLatitude,
                 Longitude = supplier.LocationLongitude,
-                Distance = $"{Math.Round(numericDistance, 2)} Km"
+                Distance = $"{Math.Round(numericDistance, 2)} Km",
+                Location = GetLocationAsync(supplier.LocationLatitude, supplier.LocationLongitude).Result
             },
             Materials = new
             {
@@ -273,5 +280,14 @@ public class SupplierService(AppDbContext context, ISupplierImportService suppli
             System.IO.File.Delete(tempFilePath);
 
         return new OkObjectResult(new { importedCount, totalRecords = suppliers.Count() });
+    }
+
+    private async Task<string> GetLocationAsync(decimal latitude, decimal longitude)
+    {
+        var url =
+            $"https://api.geoapify.com/v1/geocode/reverse?lat={latitude}&lon={longitude}&apiKey=0e99ae334bed4b85b7f75ff56a8d1226";
+        var geoResponse = await externalApiService.GetAsync<GeoapifyResponse>(url);
+
+        return geoResponse?.Features?.FirstOrDefault()?.Properties?.Formatted ?? "Location not available";
     }
 }
