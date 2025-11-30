@@ -11,4 +11,6 @@ public interface IReportService
     Task<IActionResult> GetReportByIdAsync(int reportId, int companyId, int pageNumber = 1, int pageSize = 10);
     Task<IActionResult> GetReportSummaryAsync(int companyId, int? productionLineId = null, DateTime? startDate = null,
         DateTime? endDate = null, int pageNumber = 1, int pageSize = 10);
+    Task<IActionResult> GetMonthlyReportSummaryAsync(int companyId, int? month = null, int? year = null,
+        int pageNumber = 1, int pageSize = 10);
 }

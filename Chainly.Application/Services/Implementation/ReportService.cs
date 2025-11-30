@@ -22,7 +22,7 @@ public class ReportService(AppDbContext context) : IReportService
 
         if (exists != null)
             return new ObjectResult(new { reportId = exists.Id });
-       
+
         var report = new Report
         {
             SessionId = sessionDto.SessionId,
@@ -41,7 +41,6 @@ public class ReportService(AppDbContext context) : IReportService
             ReportId = report.Id,
             ProductId = d.Id,
             Time = DateTime.Parse(d.DetectedAt),
-            DefectiveType = "Unknown"
         });
 
         context.DefectiveProducts.AddRange(defective);
@@ -202,5 +201,61 @@ public class ReportService(AppDbContext context) : IReportService
         };
 
         return new OkObjectResult(summary);
+    }
+
+    public async Task<IActionResult> GetMonthlyReportSummaryAsync(int companyId, int? month = null, int? year = null,
+        int pageNumber = 1, int pageSize = 10)
+    {
+        var targetMonth = month ?? DateTime.UtcNow.Month;
+        var targetYear = year ?? DateTime.UtcNow.Year;
+
+        var reportsQuery = context.Reports
+            .Include(r => r.ProductionLine)
+            .Include(r => r.DefectiveProducts)
+            .Where(r => r.ProductionLine.CompanyId == companyId &&
+                        r.ReportDate.Month == targetMonth &&
+                        r.ReportDate.Year == targetYear)
+            .AsNoTracking();
+
+        var allReports = await reportsQuery.ToListAsync();
+
+        var groupedReports = allReports
+            .GroupBy(r => new { r.ProductionLine.Id, r.ProductionLine.LineName })
+            .Select(g => new
+            {
+                ProductionLineId = g.Key.Id,
+                ProductionLineName = g.Key.LineName,
+                TotalProducts = g.Sum(r => r.GoodProducts + r.DefectiveProducts.Count),
+                DefectiveProductsCount = g.Sum(r => r.DefectiveProducts.Count),
+                NonDefectiveProductsCount = g.Sum(r => r.GoodProducts)
+            })
+            .ToList();
+
+        var totalCount = groupedReports.Count;
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        var pagedData = groupedReports
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        var totalProducts = allReports.Sum(r => r.GoodProducts + r.DefectiveProducts.Count);
+        var defectiveProducts = allReports.Sum(r => r.DefectiveProducts.Count);
+        var nonDefectiveProducts = allReports.Sum(r => r.GoodProducts);
+
+        var result = new
+        {
+            TotalProducts = totalProducts,
+            DefectiveProducts = defectiveProducts,
+            NonDefectiveProducts = nonDefectiveProducts,
+            Month = targetMonth,
+            Year = targetYear,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalPages = totalPages,
+            Items = pagedData,
+        };
+
+        return new OkObjectResult(result);
     }
 }

@@ -4,15 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Chainly.Domain.Models
+namespace Chainly.Domain.Models;
+
+public class DefectiveProduct
 {
-    public class DefectiveProduct
-    {
-        public int Id { get; set; }
-        public int ReportId { get; set; }
-        public Report Report { get; set; }
-        public DateTime Time { get; set; }
-        public string ProductId { get; set; }
-        public string DefectiveType { get; set; }
-    }
+    public int Id { get; set; }
+    public int ReportId { get; set; }
+    public Report Report { get; set; }
+    public DateTime Time { get; set; }
+    public string ProductId { get; set; }
 }

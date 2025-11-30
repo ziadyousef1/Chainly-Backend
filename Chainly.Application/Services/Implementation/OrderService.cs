@@ -393,20 +393,35 @@ public class OrderService(
 
     public async Task<IActionResult> GetOrdersSummaryAsync(int companyId)
     {
-        var summary = await dbContext.Orders
-            .Where(o => o.CompanyId == companyId)
-            .GroupBy(o => 1)
-            .Select(g => new
-            {
-                DeliveredOrders = g.Count(o => o.Trackings.Any(t => t.Status == OrderStatus.Delivered)),
-                PendingOrders = g.Count(o => o.Trackings.Any(t => t.Status == OrderStatus.Pending)),
-                CancelledOrders = g.Count(o => o.Trackings.Any(t => t.Status == OrderStatus.Cancelled)),
-                TotalPlacedOrders = g.Count()
-            })
-            .FirstOrDefaultAsync();
+        var now = DateTime.UtcNow;
+        var currentMonthStart = new DateTime(now.Year, now.Month, 1);
+        var lastMonthStart = currentMonthStart.AddMonths(-1);
+
+        var trackings = await dbContext.OrderTracking
+            .Where(t => t.CompanyId == companyId && t.Timestamp >= lastMonthStart)
+            .ToListAsync();
+
+        var current = trackings.Where(t => t.Timestamp >= currentMonthStart).ToList();
+        var last = trackings.Where(t => t.Timestamp < currentMonthStart).ToList();
+
+        var summary = new
+        {
+            DeliveredOrders = trackings.Count(t => t.Status == OrderStatus.Delivered),
+            DeliveredOrdersChange = CalculateChange(last.Count(t => t.Status == OrderStatus.Delivered),
+                current.Count(t => t.Status == OrderStatus.Delivered)),
+            PendingOrders = trackings.Count(t => t.Status == OrderStatus.Pending),
+            PendingOrdersChange = CalculateChange(last.Count(t => t.Status == OrderStatus.Pending),
+                current.Count(t => t.Status == OrderStatus.Pending)),
+            CancelledOrders = trackings.Count(t => t.Status == OrderStatus.Cancelled),
+            CancelledOrdersChange = CalculateChange(last.Count(t => t.Status == OrderStatus.Cancelled),
+                current.Count(t => t.Status == OrderStatus.Cancelled)),
+            TotalPlacedOrders = trackings.Count,
+            TotalPlacedOrdersChange = CalculateChange(last.Count, current.Count)
+        };
 
         return new OkObjectResult(summary);
     }
+
 
     public async Task<IActionResult> GetOrdersMonthlyStatsAsync(int companyId, int? year = null)
     {
@@ -482,5 +497,10 @@ public class OrderService(
         await dbContext.SaveChangesAsync();
 
         return new ObjectResult("Order deleted successfully.");
+    }
+
+    private double CalculateChange(int lastMonth, int currentMonth)
+    {
+        return lastMonth == 0 ? 0 : Math.Round(((currentMonth - lastMonth) / (double)lastMonth) * 100, 1);
     }
 }
