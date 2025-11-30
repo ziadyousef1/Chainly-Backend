@@ -1,12 +1,7 @@
-﻿using Chainly.API.Controllers;
-using Chainly.Application.DTOs.Orders;
-using Chainly.Application.Services.Interfaces;
-using Chainly.Domain.Constants;
+﻿using Chainly.Application.DTOs.Orders;
 using Chainly.Infrastructure.Helpers;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 
-namespace Chainly.Controllers;
+namespace Chainly.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

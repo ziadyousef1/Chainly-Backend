@@ -225,6 +225,8 @@ public class OrderService(
                 Id = o.Id,
                 CompanyOrderId = o.CompanyOrderId,
                 Code = o.Code,
+                Email = o.Email,
+                Phone = o.Phone,
                 Trackings = o.Trackings
                     .OrderByDescending(t => t.Timestamp)
                     .Select(t => new OrderTrackingDetailsDto()
@@ -317,6 +319,7 @@ public class OrderService(
         if (order == null)
             return new ServiceResponse("Order not found.", false);
 
+        order.CompanyOrderId = dto.CompanyOrderId;
         order.Code = dto.Code;
         order.Phone = dto.Phone;
         order.Email = dto.Email;

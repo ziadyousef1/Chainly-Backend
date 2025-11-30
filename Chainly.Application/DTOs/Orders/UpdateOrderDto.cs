@@ -8,6 +8,7 @@ namespace Chainly.Application.DTOs.Orders
 {
     public class UpdateOrderDto
     {
+        public int CompanyOrderId { get; set; }
         public string Code { get; set; }
         public string? Phone { get; set; }
         public string? Email { get; set; }
