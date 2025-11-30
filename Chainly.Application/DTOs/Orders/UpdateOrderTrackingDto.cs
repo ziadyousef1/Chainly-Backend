@@ -9,8 +9,8 @@ namespace Chainly.Application.DTOs.Orders
 {
     public class UpdateOrderTrackingDto
     {
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
+        public decimal Latitude { get; set; }
+        public decimal Longitude { get; set; }
         public OrderStatus Status { get; set; }
         public string Notes { get; set; }
     }

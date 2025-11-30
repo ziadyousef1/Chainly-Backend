@@ -146,11 +146,11 @@ namespace Chainly.Data.Migrations
                     b.Property<int>("CompanyId")
                         .HasColumnType("int");
 
-                    b.Property<double>("Latitude")
-                        .HasColumnType("float");
+                    b.Property<decimal>("Latitude")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<double>("Longitude")
-                        .HasColumnType("float");
+                    b.Property<decimal>("Longitude")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Notes")
                         .IsRequired()
