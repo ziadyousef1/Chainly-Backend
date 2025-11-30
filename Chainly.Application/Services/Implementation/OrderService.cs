@@ -19,16 +19,30 @@ public class OrderService(
     IExternalApiService externalApiService)
     : IOrderService
 {
-    public async Task<ServiceResponse> GetOrderUpdateAsync(string code, int companyId)
+    public async Task<ServiceResponse> GetOrderUpdateAsync(string code, int userId)
     {
-        var order = await dbContext.Orders.FirstOrDefaultAsync(o => o.Code == code);
+        var user = await dbContext.Users
+            .Where(u => u.Id == userId)
+            .Select(u => new { u.Email, u.PhoneNumber })
+            .FirstOrDefaultAsync();
+
+        if (user == null)
+        {
+            return new ServiceResponse("User not found", false);
+        }
+
+        var order = await dbContext.Orders
+            .FirstOrDefaultAsync(o => 
+                o.Code == code && 
+                (o.Email == user.Email || o.Phone == user.PhoneNumber));
+        
         if (order == null)
         {
             return new ServiceResponse("Order not found", false);
         }
 
         var orderTracking = await dbContext.OrderTracking
-            .Where(o => o.OrderId == order.Id && o.CompanyId == companyId)
+            .Where(o => o.OrderId == order.Id)
             .Select(ot => new { ot.Status, ot.Timestamp, ot.Notes })
             .ToListAsync();
         var orderTrackingJson = System.Text.Json.JsonSerializer.Serialize(orderTracking);
@@ -342,7 +356,7 @@ public class OrderService(
     }
 
 
-    private async Task<string> GetLocationAsync(double latitude, double longitude)
+    private async Task<string> GetLocationAsync(decimal latitude, decimal longitude)
     {
         var url =
             $"https://api.geoapify.com/v1/geocode/reverse?lat={latitude}&lon={longitude}&apiKey=0e99ae334bed4b85b7f75ff56a8d1226";
@@ -390,18 +404,34 @@ public class OrderService(
 
     public async Task<IActionResult> GetOrdersSummaryAsync(int companyId)
     {
-        var summary = await dbContext.Orders
-            .Where(o => o.CompanyId == companyId)
-            .GroupBy(o => 1)
-            .Select(g => new
-            {
-                DeliveredOrders = g.Count(o => o.Trackings.Any(t => t.Status == OrderStatus.Delivered)),
-                PendingOrders = g.Count(o => o.Trackings.Any(t => t.Status == OrderStatus.Pending)),
-                CancelledOrders = g.Count(o => o.Trackings.Any(t => t.Status == OrderStatus.Cancelled)),
-                TotalPlacedOrders = g.Count()
-            })
-            .FirstOrDefaultAsync();
+        var now = DateTime.UtcNow;
+        var currentMonthStart = new DateTime(now.Year, now.Month, 1);
+        var lastMonthStart = currentMonthStart.AddMonths(-1);
+
+        var trackings = await dbContext.OrderTracking
+            .Where(t => t.CompanyId == companyId && t.Timestamp >= lastMonthStart)
+            .ToListAsync();
+
+        var current = trackings.Where(t => t.Timestamp >= currentMonthStart).ToList();
+        var last = trackings.Where(t => t.Timestamp < currentMonthStart).ToList();
+
+        var summary = new
+        {
+            DeliveredOrders = trackings.Count(t => t.Status == OrderStatus.Delivered),
+            DeliveredOrdersChange = CalculateChange(last.Count(t => t.Status == OrderStatus.Delivered), current.Count(t => t.Status == OrderStatus.Delivered)),
+            PendingOrders = trackings.Count(t => t.Status == OrderStatus.Pending),
+            PendingOrdersChange = CalculateChange(last.Count(t => t.Status == OrderStatus.Pending), current.Count(t => t.Status == OrderStatus.Pending)),
+            CancelledOrders = trackings.Count(t => t.Status == OrderStatus.Cancelled),
+            CancelledOrdersChange = CalculateChange(last.Count(t => t.Status == OrderStatus.Cancelled), current.Count(t => t.Status == OrderStatus.Cancelled)),
+            TotalPlacedOrders = trackings.Count,
+            TotalPlacedOrdersChange = CalculateChange(last.Count, current.Count)
+        };
 
         return new OkObjectResult(summary);
+    }
+
+    private double CalculateChange(int lastMonth, int currentMonth)
+    {
+        return lastMonth == 0 ? 0 : Math.Round(((currentMonth - lastMonth) / (double)lastMonth) * 100, 1);
     }
 }

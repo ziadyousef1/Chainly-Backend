@@ -16,8 +16,7 @@ public class OrdersController(IOrderService orderService) : BaseController
     [Authorize]
     public async Task<IActionResult> GetOrderUpdate(string code)
     {
-        var companyId = GetCompanyId();
-        var response = await orderService.GetOrderUpdateAsync(code,companyId);
+        var response = await orderService.GetOrderUpdateAsync(code,GetUserId());
         if (!response.IsSuccess)
         {
             return NotFound(response.Message);
