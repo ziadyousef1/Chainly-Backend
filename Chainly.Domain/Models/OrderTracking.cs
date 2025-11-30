@@ -9,8 +9,8 @@ public class OrderTracking
     public int OrderId { get; set; }
     public Order Order { get; set; }
     public int CompanyId { get; set; }
-    public double Latitude { get; set; }
-    public double Longitude { get; set; }
+    public decimal Latitude { get; set; }
+    public decimal Longitude { get; set; }
     public OrderStatus Status { get; set; }
     public string Notes { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;

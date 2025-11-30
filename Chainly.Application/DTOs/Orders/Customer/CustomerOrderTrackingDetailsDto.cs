@@ -5,9 +5,9 @@ public class CustomerOrderTrackingDetailsDto
     public string Status { get; set; }
     public string Location { get; set; }
     
-    public double Longitude { get; set; }
+    public decimal Longitude { get; set; }
     
-    public double Latitude { get; set; }
+    public decimal Latitude { get; set; }
     public string Timestamp { get; set; }
 }
 

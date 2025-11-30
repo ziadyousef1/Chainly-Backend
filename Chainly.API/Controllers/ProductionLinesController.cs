@@ -1,10 +1,12 @@
 using Chainly.Application.DTOs.ProductionLines;
+using Chainly.Application.DTOs.ProductionSession;
+using Chainly.Application.Services.Interfaces;
 
 namespace Chainly.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class ProductionLinesController(IProductionLineService productionLineService) : BaseController
+public class ProductionLinesController(IProductionLineService productionLineService, IProductionSessionService sessionService) : BaseController
 {
     [HttpGet]
     [Authorize(Permissions.ProductionLines.View)]
@@ -44,5 +46,14 @@ public class ProductionLinesController(IProductionLineService productionLineServ
     {
         int companyId = GetCompanyId();
         return await productionLineService.DeleteProductionLineAsync(id, companyId);
+    }
+
+    [HttpPost("sessions")]
+//    [Authorize(Permissions.ProductionLines.Create)]
+    public async Task<IActionResult> CreateSession( [FromBody] CreateProductionSessionDto request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+        return await sessionService.CreateSessionAsync(request, request.CompanyId);
     }
 }

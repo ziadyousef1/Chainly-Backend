@@ -16,8 +16,7 @@ public class OrdersController(IOrderService orderService) : BaseController
     [Authorize]
     public async Task<IActionResult> GetOrderUpdate(string code)
     {
-        var companyId = GetCompanyId();
-        var response = await orderService.GetOrderUpdateAsync(code,companyId);
+        var response = await orderService.GetOrderUpdateAsync(code, GetUserId());
         if (!response.IsSuccess)
         {
             return NotFound(response.Message);
@@ -50,7 +49,8 @@ public class OrdersController(IOrderService orderService) : BaseController
 
     [HttpGet("customer")]
     [Authorize]
-    public async Task<IActionResult> GetCustomerOrders( int pageNumber = 1, int pageSize = 10, OrderStatus? status = null, string? search = null)
+    public async Task<IActionResult> GetCustomerOrders(int pageNumber = 1, int pageSize = 10,
+        OrderStatus? status = null, string? search = null)
     {
         var customerId = GetUserId();
         return await orderService.GetCustomerPagedOrdersAsync(customerId, pageNumber, pageSize, status, search);
@@ -132,6 +132,7 @@ public class OrdersController(IOrderService orderService) : BaseController
 
         return new OkObjectResult(statuses);
     }
+
     [HttpGet("monthly-stats")]
     [Authorize(Permissions.Orders.View)]
     public async Task<IActionResult> GetOrdersMonthlyStats(int? year = null)
@@ -139,6 +140,7 @@ public class OrdersController(IOrderService orderService) : BaseController
         var companyId = GetCompanyId();
         return await orderService.GetOrdersMonthlyStatsAsync(companyId, year);
     }
+
     [HttpDelete("{orderId}")]
     [Authorize(Permissions.Orders.Delete)]
     public async Task<IActionResult> DeleteOrder(int orderId)

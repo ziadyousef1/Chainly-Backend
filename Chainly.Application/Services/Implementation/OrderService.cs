@@ -342,7 +342,7 @@ public class OrderService(
     }
 
 
-    private async Task<string> GetLocationAsync(double latitude, double longitude)
+    private async Task<string> GetLocationAsync(decimal latitude, decimal longitude)
     {
         var url =
             $"https://api.geoapify.com/v1/geocode/reverse?lat={latitude}&lon={longitude}&apiKey=0e99ae334bed4b85b7f75ff56a8d1226";
@@ -457,6 +457,7 @@ public class OrderService(
 
         return new OkObjectResult(result);
     }
+
     public async Task<IActionResult> DeleteOrderAsync(int orderId, int companyId)
     {
         var order = await dbContext.Orders

@@ -54,7 +54,7 @@ namespace Chainly.Application.Tests
                 .ReturnsAsync("AI: Order is pending");
 
             // Act
-            var result = await _orderService.GetOrderUpdateAsync("125654",order.CompanyOrderId);
+            var result = await _orderService.GetOrderUpdateAsync("125654",99);
 
             // Assert
             Assert.True(result.IsSuccess);

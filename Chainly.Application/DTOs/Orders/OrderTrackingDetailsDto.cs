@@ -10,9 +10,9 @@ public class OrderTrackingDetailsDto
     public string Notes { get; set; }
     public string Location { get; set; }
     
-    public double Longitude { get; set; }
+    public decimal Longitude { get; set; }
     
-    public double Latitude { get; set; }
+    public decimal Latitude { get; set; }
     public string Timestamp { get; set; }
     public UpdatedByDto UpdatedBy { get; set; }
 }
