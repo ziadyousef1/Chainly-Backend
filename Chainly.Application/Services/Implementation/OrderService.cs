@@ -399,24 +399,44 @@ public class OrderService(
 
         var trackings = await dbContext.OrderTracking
             .Where(t => t.CompanyId == companyId && t.Timestamp >= lastMonthStart)
+            .Select(t => new { t.OrderId, t.Status, t.Timestamp })
             .ToListAsync();
 
         var current = trackings.Where(t => t.Timestamp >= currentMonthStart).ToList();
-        var last = trackings.Where(t => t.Timestamp < currentMonthStart).ToList();
+        var last = trackings.Where(t => t.Timestamp < currentMonthStart && t.Timestamp > lastMonthStart).ToList();
+
+        int CountByLastStatus(IEnumerable<dynamic> list, OrderStatus status)
+        {
+            return list
+                .GroupBy(t => (int)t.OrderId)
+                .Select(g => g.OrderByDescending(t => (DateTime)t.Timestamp).First())
+                .Count(t => (OrderStatus)t.Status == status);
+        }
+
+        int CountTotal(IEnumerable<dynamic> list)
+        {
+            return list.Select(t => (int)t.OrderId).Distinct().Count();
+        }
 
         var summary = new
         {
-            DeliveredOrders = trackings.Count(t => t.Status == OrderStatus.Delivered),
-            DeliveredOrdersChange = CalculateChange(last.Count(t => t.Status == OrderStatus.Delivered),
-                current.Count(t => t.Status == OrderStatus.Delivered)),
-            PendingOrders = trackings.Count(t => t.Status == OrderStatus.Pending),
-            PendingOrdersChange = CalculateChange(last.Count(t => t.Status == OrderStatus.Pending),
-                current.Count(t => t.Status == OrderStatus.Pending)),
-            CancelledOrders = trackings.Count(t => t.Status == OrderStatus.Cancelled),
-            CancelledOrdersChange = CalculateChange(last.Count(t => t.Status == OrderStatus.Cancelled),
-                current.Count(t => t.Status == OrderStatus.Cancelled)),
-            TotalPlacedOrders = trackings.Count,
-            TotalPlacedOrdersChange = CalculateChange(last.Count, current.Count)
+            DeliveredOrders = CountByLastStatus(trackings, OrderStatus.Delivered),
+            DeliveredOrdersChange = CalculateChange(
+                CountByLastStatus(last, OrderStatus.Delivered),
+                CountByLastStatus(current, OrderStatus.Delivered)),
+            
+            PendingOrders = CountByLastStatus(trackings, OrderStatus.Pending),
+            PendingOrdersChange = CalculateChange(
+                CountByLastStatus(last, OrderStatus.Pending),
+                CountByLastStatus(current, OrderStatus.Pending)),
+
+            CancelledOrders = CountByLastStatus(trackings, OrderStatus.Cancelled),
+            CancelledOrdersChange = CalculateChange(
+                CountByLastStatus(last, OrderStatus.Cancelled),
+                CountByLastStatus(current, OrderStatus.Cancelled)),
+
+            TotalPlacedOrders = CountTotal(trackings),
+            TotalPlacedOrdersChange = CalculateChange(CountTotal(last), CountTotal(current))
         };
 
         return new OkObjectResult(summary);
