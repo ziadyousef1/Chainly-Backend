@@ -9,10 +9,10 @@ public class ProductionLinesController(IProductionLineService productionLineServ
 {
     [HttpGet]
     [Authorize(Permissions.ProductionLines.View)]
-    public async Task<IActionResult> GetAllProductionLines([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    public async Task<IActionResult> GetAllProductionLines([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null)
     {
         int companyId = GetCompanyId();
-        return await productionLineService.GetAllProductionLinesAsync(companyId, pageNumber, pageSize);
+        return await productionLineService.GetAllProductionLinesAsync(companyId, pageNumber, pageSize, search);
     }
 
     [HttpPost]

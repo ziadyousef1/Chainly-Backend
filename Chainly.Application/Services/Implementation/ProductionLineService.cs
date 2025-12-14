@@ -9,13 +9,28 @@ namespace Chainly.Application.Services.Implementation;
 
 public class ProductionLineService(AppDbContext context) : IProductionLineService
 {
-    public async Task<IActionResult> GetAllProductionLinesAsync(int companyId, int pageNumber = 1, int pageSize = 10)
+    public async Task<IActionResult> GetAllProductionLinesAsync(
+        int companyId,
+        int pageNumber = 1,
+        int pageSize = 10,
+        string? search = null)
     {
-        if (pageNumber <= 0) pageNumber = 1;
-        if (pageSize <= 0) pageSize = 10;
+        pageNumber = pageNumber <= 0 ? 1 : pageNumber;
+        pageSize = pageSize <= 0 ? 10 : pageSize;
 
         var query = context.ProductionLines
-            .Where(l => l.CompanyId == companyId);
+            .Where(l => l.CompanyId == companyId)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLower();
+
+            query = query.Where(l =>
+                l.LineName.ToLower().Contains(term) ||
+                (l.Description != null && l.Description.ToLower().Contains(term))
+            );
+        }
 
         var totalCount = await query.CountAsync();
 
