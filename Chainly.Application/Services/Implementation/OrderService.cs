@@ -228,7 +228,7 @@ public class OrderService(
                 Email = o.Email,
                 Phone = o.Phone,
                 Trackings = o.Trackings
-                    .OrderByDescending(t => t.Timestamp)
+                    .OrderBy(t => t.Timestamp)
                     .Select(t => new OrderTrackingDetailsDto()
                     {
                         Id = t.Id,
