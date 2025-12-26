@@ -17,66 +17,88 @@ public class SupplierService(
     IExternalApiService externalApiService)
     : ISupplierService
 {
-    public async Task<IActionResult> GetSuppliersAsync(int companyId, int pageNumber = 1, int pageSize = 10,
-        string? sortType = null, string? search = null)
+    public async Task<IActionResult> GetSuppliersAsync(
+        int companyId,
+        int pageNumber = 1,
+        int pageSize = 10,
+        string? sortType = null,
+        string? search = null)
     {
         if (pageNumber <= 0) pageNumber = 1;
         if (pageSize <= 0) pageSize = 10;
 
-        var company = await context.Companies.FindAsync(companyId);
+        var company = await context.Companies
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == companyId);
+
         if (company == null)
             return new NotFoundObjectResult("Company not found.");
 
-        var supplierEntities = await context.Suppliers
-            .Where(s => s.CompanyId == null || s.CompanyId == company.Id)
-            .ToListAsync();
+        IQueryable<Supplier> query = context.Suppliers
+            .AsNoTracking()
+            .Where(s => s.CompanyId == null || s.CompanyId == company.Id);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            string term = search.Trim().ToLower();
-            supplierEntities = supplierEntities
-                .Where(s => s.Name.ToLower().Contains(term))
-                .ToList();
+            query = query.Where(s => s.Name.Contains(search));
         }
 
-        var suppliers = supplierEntities
+        var totalCount = await query.CountAsync();
+
+        var suppliers = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
             .Select(s => new
             {
                 s.Id,
                 s.Name,
-                NumericDistance = LocationHelper.CalculateDistance(
-                    company.LocationLatitude,
-                    company.LocationLongitude,
-                    s.LocationLatitude,
-                    s.LocationLongitude),
-                Location = GetLocationAsync(s.LocationLatitude, s.LocationLongitude).Result
+                s.LocationLatitude,
+                s.LocationLongitude
             })
-            .ToList();
+            .ToListAsync();
+
+        var supplierDtos = new List<object>(suppliers.Count);
+
+        foreach (var supplier in suppliers)
+        {
+            var distance = LocationHelper.CalculateDistance(
+                company.LocationLatitude,
+                company.LocationLongitude,
+                supplier.LocationLatitude,
+                supplier.LocationLongitude);
+
+            supplierDtos.Add(new
+            {
+                supplier.Id,
+                supplier.Name,
+                Distance = $"{Math.Round(distance, 2)} Km",
+                Location = await GetLocationAsync(
+                    supplier.LocationLatitude,
+                    supplier.LocationLongitude)
+            });
+        }
 
         if (!string.IsNullOrWhiteSpace(sortType))
         {
-            suppliers = sortType.ToLower() switch
+            supplierDtos = sortType.ToLower() switch
             {
-                "asc" => suppliers.OrderBy(s => s.NumericDistance).ToList(),
-                "desc" => suppliers.OrderByDescending(s => s.NumericDistance).ToList(),
-                _ => suppliers
+                "asc" => supplierDtos
+                    .OrderBy(s => double.Parse(((string)s.GetType()
+                            .GetProperty("Distance")!
+                            .GetValue(s)!)
+                        .Replace(" Km", "")))
+                    .ToList(),
+
+                "desc" => supplierDtos
+                    .OrderByDescending(s => double.Parse(((string)s.GetType()
+                            .GetProperty("Distance")!
+                            .GetValue(s)!)
+                        .Replace(" Km", "")))
+                    .ToList(),
+
+                _ => supplierDtos
             };
         }
-
-        var totalCount = suppliers.Count;
-
-        suppliers = suppliers
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
-
-        var supplierDtos = suppliers.Select(s => new
-        {
-            s.Id,
-            s.Name,
-            Distance = $"{Math.Round(s.NumericDistance, 2)} Km",
-            s.Location
-        });
 
         return new OkObjectResult(new
         {
@@ -87,6 +109,7 @@ public class SupplierService(
             Items = supplierDtos
         });
     }
+
 
     public async Task<IActionResult> GetSupplierAsync(int id, int companyId, int pageNumber = 1, int pageSize = 10,
         string? search = null)
