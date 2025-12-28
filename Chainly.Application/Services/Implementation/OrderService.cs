@@ -338,7 +338,6 @@ public class OrderService(
         tracking.Longitude = dto.Longitude;
         tracking.Status = dto.Status;
         tracking.Notes = dto.Notes;
-        tracking.Timestamp = DateTime.UtcNow;
 
         await dbContext.SaveChangesAsync();
         return new ServiceResponse("Order tracking updated successfully.", true);
