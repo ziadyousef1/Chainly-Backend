@@ -14,7 +14,7 @@ using OfficeOpenXml;
 namespace Chainly.Application.Services.Implementation;
 
 public class OrderService(
-    IDeepSeekService deepSeekService,
+    IAzureOpenAIService azureOpenAIService,
     AppDbContext dbContext,
     IExternalApiService externalApiService)
     : IOrderService
@@ -28,11 +28,11 @@ public class OrderService(
         }
 
         var orderTracking = await dbContext.OrderTracking
-            .Where(o => o.OrderId == order.Id && o.CompanyId == companyId)
+            .Where(o => o.OrderId == order.Id )
             .Select(ot => new { ot.Status, ot.Timestamp, ot.Notes })
             .ToListAsync();
         var orderTrackingJson = System.Text.Json.JsonSerializer.Serialize(orderTracking);
-        var message = await deepSeekService.GenerateOrderUpdateMessageAsync(orderTrackingJson);
+        var message = await azureOpenAIService.GenerateOrderUpdateMessageAsync(orderTrackingJson);
         return new ServiceResponse(message, true);
     }
 

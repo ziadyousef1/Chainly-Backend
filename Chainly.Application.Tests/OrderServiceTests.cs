@@ -16,7 +16,7 @@ namespace Chainly.Application.Tests
     public class OrderServiceTests
     {
         private readonly AppDbContext _dbContext;
-        private readonly Mock<IDeepSeekService> _mockDeepSeekService;
+        private readonly Mock<IAzureOpenAIService> _mockAzureOpenAIService;
         private readonly Mock<IExternalApiService> _mockExternalApiService;
         private readonly OrderService _orderService;
 
@@ -27,10 +27,10 @@ namespace Chainly.Application.Tests
                 .Options;
 
             _dbContext = new AppDbContext(options);
-            _mockDeepSeekService = new Mock<IDeepSeekService>();
+            _mockAzureOpenAIService = new Mock<IAzureOpenAIService>();
             _mockExternalApiService = new Mock<IExternalApiService>();
 
-            _orderService = new OrderService(_mockDeepSeekService.Object, _dbContext, _mockExternalApiService.Object);
+            _orderService = new OrderService(_mockAzureOpenAIService.Object, _dbContext, _mockExternalApiService.Object);
         }
 
         [Fact]
@@ -49,7 +49,7 @@ namespace Chainly.Application.Tests
             });
             await _dbContext.SaveChangesAsync();
 
-            _mockDeepSeekService
+            _mockAzureOpenAIService
                 .Setup(s => s.GenerateOrderUpdateMessageAsync(It.IsAny<string>()))
                 .ReturnsAsync("AI: Order is pending");
 

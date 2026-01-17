@@ -1,4 +1,5 @@
 ﻿namespace Chainly.Application.Configurations;
+
 public class DeepSeekSettings
 {
     public string Url { get; set; }
