@@ -14,17 +14,17 @@ namespace Chainly.Application.Extensions
         public static IServiceCollection AddApplicationServices(this IServiceCollection services,
             IConfiguration configuration)
         {
-            services.Configure<DeepSeekSettings>(configuration.GetSection("DeepSeekSettings"));
+            services.Configure<AzureOpenAISettings>(configuration.GetSection("AzureOpenAISettings"));
             services.Configure<AiApiSettings>(configuration.GetSection("AiApi"));
             services.Configure<CloudStorageSettings>(configuration.GetSection(CloudStorageSettings.AzureStorage));
 
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IUserService, UserService>();
-            services.AddScoped<IDeepSeekService>(provider =>
+            services.AddScoped<IAzureOpenAIService>(provider =>
             {
                 var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient();
-                var deepSeekSettings = provider.GetRequiredService<IOptions<DeepSeekSettings>>();
-                return new DeepSeekService(deepSeekSettings, httpClient);
+                var azureOpenAISettings = provider.GetRequiredService<IOptions<AzureOpenAISettings>>();
+                return new AzureOpenAIService(azureOpenAISettings, httpClient);
             });
             services.AddScoped<IOrderService, OrderService>();
             services.AddScoped<ISupplierImportService, SupplierImportService>();
