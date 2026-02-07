@@ -6,10 +6,11 @@ public class ProductsController(IProductService productService) : BaseController
 {
     [HttpGet]
     [Authorize(Permissions.Products.View)]
-    public async Task<IActionResult> GetAllProducts(int pageNumber = 1, int pageSize = 10, string? search = null)
+    public async Task<IActionResult> GetAllProducts(int pageNumber = 1, int pageSize = 10, string? search = null,
+        string? sortByStock = null)
     {
         int companyId = GetCompanyId();
-        return await productService.GetAllProductsAsync(companyId, pageNumber, pageSize, search);
+        return await productService.GetAllProductsAsync(companyId, pageNumber, pageSize, search, sortByStock);
     }
 
     [HttpGet("top/{count}")]
@@ -21,8 +22,8 @@ public class ProductsController(IProductService productService) : BaseController
     }
 
     [HttpPost("import")]
-   [Authorize(Permissions.Products.Import)]
-    public async Task<IActionResult> ImportProducts(IFormFile file , int companyId)
+    [Authorize(Permissions.Products.Import)]
+    public async Task<IActionResult> ImportProducts(IFormFile file, int companyId)
     {
         if (file == null || file.Length == 0)
             return BadRequest("Please select a valid Excel file.");
@@ -31,5 +32,13 @@ public class ProductsController(IProductService productService) : BaseController
             return BadRequest("Only Excel files (.xlsx) are supported.");
 
         return await productService.ImportProductsFromExcelAsync(file, companyId);
+    }
+
+    [HttpDelete("{productId}")]
+    [Authorize(Permissions.Products.Delete)]
+    public async Task<IActionResult> DeleteProduct(int productId)
+    {
+        int companyId = GetCompanyId();
+        return await productService.DeleteProductAsync(productId, companyId);
     }
 }

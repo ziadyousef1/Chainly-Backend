@@ -15,7 +15,8 @@ public class ProductService(AppDbContext context) : IProductService
         int companyId,
         int pageNumber = 1,
         int pageSize = 10,
-        string? search = null)
+        string? search = null,
+        string? sortByStock = null)
     {
         if (pageNumber <= 0) pageNumber = 1;
         if (pageSize <= 0) pageSize = 10;
@@ -29,16 +30,25 @@ public class ProductService(AppDbContext context) : IProductService
 
         var totalCount = await query.CountAsync();
 
-        var products = await query
-            .OrderBy(p => p.Id)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
+        var productsQuery = query
             .Select(p => new ProductDto
             {
                 Id = p.Id,
                 Name = p.Name,
-                Stock = Math.Abs(p.Stock - context.SalesData.Count(s => s.ProductId == p.Id && s.CompanyId == companyId))
-            })
+                Stock = Math.Abs(
+                    p.Stock - context.SalesData.Count(s => s.ProductId == p.Id && s.CompanyId == companyId))
+            });
+
+        productsQuery = sortByStock?.ToLower() switch
+        {
+            "asc" => productsQuery.OrderBy(p => p.Stock),
+            "desc" => productsQuery.OrderByDescending(p => p.Stock),
+            _ => productsQuery.OrderBy(p => p.Id)
+        };
+
+        var products = await productsQuery
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
         var response = new
@@ -178,5 +188,21 @@ public class ProductService(AppDbContext context) : IProductService
         };
 
         return new OkObjectResult(result);
+    }
+
+    public async Task<IActionResult> DeleteProductAsync(int productId, int companyId)
+    {
+        var product = await context.Products
+            .FirstOrDefaultAsync(p => p.Id == productId && p.CompanyId == companyId);
+
+        if (product == null)
+        {
+            return new NotFoundObjectResult("Product not found");
+        }
+
+        context.Products.Remove(product);
+        await context.SaveChangesAsync();
+
+        return new OkObjectResult("Product deleted successfully");
     }
 }
