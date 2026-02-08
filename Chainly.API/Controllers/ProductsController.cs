@@ -7,10 +7,10 @@ public class ProductsController(IProductService productService) : BaseController
     [HttpGet]
     [Authorize(Permissions.Products.View)]
     public async Task<IActionResult> GetAllProducts(int pageNumber = 1, int pageSize = 10, string? search = null,
-        string? sortByStock = null)
+        string? sortByStock = null, int? minStock = null, int? maxStock = null)
     {
         int companyId = GetCompanyId();
-        return await productService.GetAllProductsAsync(companyId, pageNumber, pageSize, search, sortByStock);
+        return await productService.GetAllProductsAsync(companyId, pageNumber, pageSize, search, sortByStock, minStock, maxStock);
     }
 
     [HttpGet("top/{count}")]

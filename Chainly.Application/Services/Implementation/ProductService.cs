@@ -16,7 +16,9 @@ public class ProductService(AppDbContext context) : IProductService
         int pageNumber = 1,
         int pageSize = 10,
         string? search = null,
-        string? sortByStock = null)
+        string? sortByStock = null,
+        int? minStock = null,
+        int? maxStock = null)
     {
         if (pageNumber <= 0) pageNumber = 1;
         if (pageSize <= 0) pageSize = 10;
@@ -28,8 +30,6 @@ public class ProductService(AppDbContext context) : IProductService
             query = query.Where(p => p.Name.Contains(search));
         }
 
-        var totalCount = await query.CountAsync();
-
         var productsQuery = query
             .Select(p => new ProductDto
             {
@@ -39,12 +39,24 @@ public class ProductService(AppDbContext context) : IProductService
                     p.Stock - context.SalesData.Count(s => s.ProductId == p.Id && s.CompanyId == companyId))
             });
 
+        if (minStock.HasValue)
+        {
+            productsQuery = productsQuery.Where(p => p.Stock >= minStock.Value);
+        }
+
+        if (maxStock.HasValue)
+        {
+            productsQuery = productsQuery.Where(p => p.Stock <= maxStock.Value);
+        }
+
         productsQuery = sortByStock?.ToLower() switch
         {
-            "asc" => productsQuery.OrderBy(p => p.Stock),
+            "asc"  => productsQuery.OrderBy(p => p.Stock),
             "desc" => productsQuery.OrderByDescending(p => p.Stock),
-            _ => productsQuery.OrderBy(p => p.Id)
+            _      => productsQuery.OrderBy(p => p.Id)
         };
+
+        var totalCount = await productsQuery.CountAsync();
 
         var products = await productsQuery
             .Skip((pageNumber - 1) * pageSize)
@@ -62,6 +74,7 @@ public class ProductService(AppDbContext context) : IProductService
 
         return new OkObjectResult(response);
     }
+
 
     public async Task<IActionResult> GetTopProductsAsync(int companyId, int topCount = 5)
     {
