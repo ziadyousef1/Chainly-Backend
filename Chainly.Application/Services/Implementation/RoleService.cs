@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-using Chainly.Application.DTOs.Roles;
+﻿using Chainly.Application.DTOs.Roles;
 using Chainly.Application.Services.Interfaces;
 using Chainly.Data;
 using Chainly.Domain.Constants;
@@ -28,10 +27,10 @@ public class RoleService(RoleManager<Role> roleManager, AppDbContext context) : 
             .Take(pageSize)
             .ToListAsync();
 
-        var result = roles.Select(r => new RoleDto
+        var result = roles.Select(r => new 
         {
-            Id = r.Id,
-            Name = r.Name,
+            r.Id,
+            r.Name,
         }).ToList();
 
         var response = new
@@ -111,27 +110,61 @@ public class RoleService(RoleManager<Role> roleManager, AppDbContext context) : 
         if (role is null)
             return new NotFoundObjectResult(new { message = "Role not found" });
 
-        role.Name = dto.Name.Trim();
-        role.NormalizedName = dto.Name.Trim().ToUpper();
-        await roleManager.UpdateAsync(role);
+        var newName = dto.Name.Trim();
+        var newNormalizedName = newName.ToUpper();
 
+        if (!string.Equals(role.NormalizedName, newNormalizedName, StringComparison.Ordinal))
+        {
+            var duplicate = await roleManager.Roles
+                .AnyAsync(r => r.NormalizedName == newNormalizedName && r.Id != roleId && r.CompanyId == companyId);
 
-        var roleClaims = await roleManager.GetClaimsAsync(role);
-        foreach (var claim in roleClaims)
-            await roleManager.RemoveClaimAsync(role, claim);
+            if (duplicate)
+            {
+                return new BadRequestObjectResult(new[]
+                {
+                    new { code = "DuplicateRoleName", description = $"Role name '{newName}' is already taken." }
+                });
+            }
+
+            role.Name = newName;
+            role.NormalizedName = newNormalizedName;
+
+            var updateResult = await roleManager.UpdateAsync(role);
+            if (!updateResult.Succeeded)
+                return new BadRequestObjectResult(updateResult.Errors);
+        }
+
+        var roleClaimEntities = await context.RoleClaims
+            .Where(rc => rc.RoleId == roleId && rc.ClaimType == CustomClaimTypes.Permission)
+            .ToListAsync();
+
+        if (roleClaimEntities.Any())
+        {
+            context.RoleClaims.RemoveRange(roleClaimEntities);
+        }
 
         var selectedPermissions = dto.Permissions
             .SelectMany(g => g.Value)
             .Where(p => p.IsAssigned)
-            .Select(p => p.Name)
+            .Select(p => p.Name.Trim())
+            .Where(n => !string.IsNullOrEmpty(n))
+            .Distinct()
             .ToList();
 
         foreach (var permission in selectedPermissions)
-            await roleManager.AddClaimAsync(role, new Claim(CustomClaimTypes.Permission, permission));
+        {
+            context.RoleClaims.Add(new IdentityRoleClaim<int>
+            {
+                RoleId = roleId,
+                ClaimType = CustomClaimTypes.Permission,
+                ClaimValue = permission
+            });
+        }
+
+        await context.SaveChangesAsync();
 
         return new OkObjectResult(new { message = "Role updated successfully" });
     }
-
 
     public async Task<IActionResult> DeleteRoleAsync(int roleId, int companyId)
     {

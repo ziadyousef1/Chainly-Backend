@@ -22,6 +22,7 @@ public static class Permissions
         public const string Create = "Users.Create";
         public const string Update = "Users.Update";
         public const string Delete = "Users.Delete";
+        public const string Activate = "Users.Activate";
     }
 
     public static class Roles
@@ -39,14 +40,6 @@ public static class Permissions
         public const string Update = "Suppliers.Update";
         public const string Delete = "Suppliers.Delete";
         public const string Import = "Suppliers.Import";
-    }
-
-    public static class Companies
-    {
-        public const string View = "Companies.View";
-        public const string Create = "Companies.Create";
-        public const string Update = "Companies.Update";
-        public const string Delete = "Companies.Delete";
     }
 
     public static class Materials

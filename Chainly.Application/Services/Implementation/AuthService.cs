@@ -64,7 +64,8 @@ public class AuthService(
                 UserName = model.Email,
                 Email = model.Email,
                 FullName = model.FullName,
-                CompanyId = company.Id
+                CompanyId = company.Id,
+                IsActive = true,
             };
 
             if (model.ProfilePicture != null && model.ProfilePicture.Length > 0)
@@ -164,6 +165,11 @@ public class AuthService(
 
         if (user == null || !await userManager.CheckPasswordAsync(user, model.Password) || (isCustomer && user.CompanyId is not null) || (!isCustomer && user.CompanyId is null))
             return new UnauthorizedObjectResult("Invalid login attempt");
+
+        if (!user.IsActive)
+        {
+            return new UnauthorizedObjectResult("User is not active");  
+        }
 
         if (!await userManager.IsEmailConfirmedAsync(user))
             return new UnauthorizedObjectResult(

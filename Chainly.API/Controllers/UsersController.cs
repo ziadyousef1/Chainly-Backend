@@ -6,10 +6,10 @@ public class UsersController(IUserService userService) : BaseController
 {
     [HttpGet]
     [Authorize(Permissions.Users.View)]
-    public async Task<IActionResult> GetAllUsers([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    public async Task<IActionResult> GetAllUsers(int pageNumber = 1, int pageSize = 10,  bool? isActive = null, int? roleId = null)
     {
         int companyId = GetCompanyId();
-        return await userService.GetAllUsersAsync(companyId, pageNumber, pageSize);
+        return await userService.GetAllUsersAsync(companyId, pageNumber, pageSize, isActive, roleId);
     }
 
 
@@ -52,5 +52,13 @@ public class UsersController(IUserService userService) : BaseController
         int userId = GetUserId();
 
         return await userService.GetCurrentUserAsync(userId);
+    }
+    
+    [HttpPatch("{id}/activation")]
+    [Authorize(Permissions.Users.Activate)]
+    public async Task<IActionResult> ChangeActivation(int id, bool isActive)
+    {
+        int companyId = GetCompanyId();
+        return await userService.ChangeUserActivationAsync(id, companyId, isActive);
     }
 }
