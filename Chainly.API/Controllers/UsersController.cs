@@ -6,10 +6,10 @@ public class UsersController(IUserService userService) : BaseController
 {
     [HttpGet]
     [Authorize(Permissions.Users.View)]
-    public async Task<IActionResult> GetAllUsers(int pageNumber = 1, int pageSize = 10,  bool? isActive = null, int? roleId = null)
+    public async Task<IActionResult> GetAllUsers(int pageNumber = 1, int pageSize = 10,  bool? isActive = null, int? roleId = null, string? search = null)
     {
         int companyId = GetCompanyId();
-        return await userService.GetAllUsersAsync(companyId, pageNumber, pageSize, isActive, roleId);
+        return await userService.GetAllUsersAsync(companyId, pageNumber, pageSize, isActive, roleId, search);
     }
 
 

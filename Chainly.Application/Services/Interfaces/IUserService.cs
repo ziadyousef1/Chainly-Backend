@@ -6,7 +6,7 @@ namespace Chainly.Application.Interfaces
     public interface IUserService
     {
         Task<IActionResult> GetAllUsersAsync(int companyId, int pageNumber = 1, int pageSize = 10, bool? isActive = null,
-            int? roleId = null);
+            int? roleId = null, string? search = null);
         Task<IActionResult> GetUserByIdAsync(int id, int companyId);
         Task<IActionResult> CreateUserAsync(UserCreateDto dto, int companyId);
         Task<IActionResult> UpdateUserAsync(int id, UserUpdateDto dto, int companyId);

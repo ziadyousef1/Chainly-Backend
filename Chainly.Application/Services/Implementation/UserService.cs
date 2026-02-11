@@ -13,91 +13,102 @@ namespace Chainly.Application.Services.Implementation;
 
 public class UserService(UserManager<User> userManager, AppDbContext context, IHttpContextAccessor accessor) : IUserService
 {
-public async Task<IActionResult> GetAllUsersAsync(
-    int companyId,
-    int pageNumber = 1,
-    int pageSize = 10,
-    bool? isActive = null,
-    int? roleId = null)
-{
-    if (pageNumber <= 0) pageNumber = 1;
-    if (pageSize <= 0) pageSize = 10;
-
-    var usersQuery = context.Users
-        .AsNoTracking()
-        .Where(u => u.CompanyId == companyId);
-
-    if (isActive.HasValue)
-        usersQuery = usersQuery.Where(u => u.IsActive == isActive.Value);
-
-    if (roleId.HasValue)
+    public async Task<IActionResult> GetAllUsersAsync(
+        int companyId,
+        int pageNumber = 1,
+        int pageSize = 10,
+        bool? isActive = null,
+        int? roleId = null,
+        string? search = null)
     {
-        usersQuery = usersQuery
-            .Where(u => context.UserRoles
-                .Any(ur => ur.UserId == u.Id && ur.RoleId == roleId.Value));
-    }
+        if (pageNumber <= 0) pageNumber = 1;
+        if (pageSize <= 0) pageSize = 10;
 
-    var activeUsersCount = await context.Users
-        .CountAsync(u => u.CompanyId == companyId && u.IsActive);
+        var usersQuery = context.Users
+            .AsNoTracking()
+            .Where(u => u.CompanyId == companyId);
 
-    var inactiveUsersCount = await context.Users
-        .CountAsync(u => u.CompanyId == companyId && !u.IsActive);
-
-    var totalCount = await usersQuery.CountAsync();
-
-    var pagedUsers = await usersQuery
-        .OrderBy(u => u.Id)
-        .Skip((pageNumber - 1) * pageSize)
-        .Take(pageSize)
-        .ToListAsync();
-
-    var userIds = pagedUsers.Select(u => u.Id).ToList();
-
-    var rolesLookup = await (
-        from userRole in context.UserRoles
-        join role in context.Roles
-            on userRole.RoleId equals role.Id
-        where userIds.Contains(userRole.UserId)
-        select new
+        if (!string.IsNullOrWhiteSpace(search))
         {
-            userRole.UserId,
-            role.Name
+            var trimmedSearch = search.Trim();
+
+            usersQuery = usersQuery.Where(u =>
+                u.FullName.Contains(trimmedSearch) ||
+                u.Email.Contains(trimmedSearch));
         }
-    ).ToListAsync();
 
-    var groupedRoles = rolesLookup
-        .GroupBy(x => x.UserId)
-        .ToDictionary(
-            g => g.Key,
-            g => g.Select(x => x.Name!)
-                  .Where(name => !string.IsNullOrEmpty(name))
-                  .ToList()
-        );
+        if (isActive.HasValue)
+            usersQuery = usersQuery.Where(u => u.IsActive == isActive.Value);
 
-    var userDtos = pagedUsers.Select(user => new UserDto
-    {
-        Id = user.Id,
-        FullName = user.FullName,
-        Email = user.Email,
-        IsActive = user.IsActive,
-        Roles = groupedRoles.ContainsKey(user.Id)
-            ? groupedRoles[user.Id]
-            : new List<string>()
-    }).ToList();
+        if (roleId.HasValue)
+        {
+            usersQuery = usersQuery
+                .Where(u => context.UserRoles
+                    .Any(ur => ur.UserId == u.Id && ur.RoleId == roleId.Value));
+        }
 
-    var result = new
-    {
-        TotalCount = totalCount,
-        ActiveUsersCount = activeUsersCount,
-        InactiveUsersCount = inactiveUsersCount,
-        PageNumber = pageNumber,
-        PageSize = pageSize,
-        TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
-        Items = userDtos
-    };
+        var activeUsersCount = await context.Users
+            .CountAsync(u => u.CompanyId == companyId && u.IsActive);
 
-    return new OkObjectResult(result);
-}
+        var inactiveUsersCount = await context.Users
+            .CountAsync(u => u.CompanyId == companyId && !u.IsActive);
+
+        var totalCount = await usersQuery.CountAsync();
+
+        var pagedUsers = await usersQuery
+            .OrderBy(u => u.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var userIds = pagedUsers.Select(u => u.Id).ToList();
+
+        var rolesLookup = await (
+            from userRole in context.UserRoles
+            join role in context.Roles
+                on userRole.RoleId equals role.Id
+            where userIds.Contains(userRole.UserId)
+            select new
+            {
+                userRole.UserId,
+                role.Name
+            }
+        ).ToListAsync();
+
+        var groupedRoles = rolesLookup
+            .GroupBy(x => x.UserId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(x => x.Name!)
+                      .Where(name => !string.IsNullOrEmpty(name))
+                      .ToList()
+            );
+
+        var userDtos = pagedUsers.Select(user => new UserDto
+        {
+            Id = user.Id,
+            FullName = user.FullName,
+            Email = user.Email,
+            IsActive = user.IsActive,
+            Roles = groupedRoles.ContainsKey(user.Id)
+                ? groupedRoles[user.Id]
+                : new List<string>()
+        }).ToList();
+
+        var result = new
+        {
+            TotalCount = totalCount,
+            ActiveUsersCount = activeUsersCount,
+            InactiveUsersCount = inactiveUsersCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+            Items = userDtos
+        };
+
+        return new OkObjectResult(result);
+    }
+    
     public async Task<IActionResult> CreateUserAsync(UserCreateDto dto, int companyId)
     {
         if (dto.Password != dto.ConfirmPassword)
