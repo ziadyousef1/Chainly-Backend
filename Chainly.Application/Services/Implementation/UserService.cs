@@ -133,19 +133,30 @@ public class UserService(UserManager<User> userManager, AppDbContext context, IH
 
         if (dto.Roles is not null && dto.Roles.Any())
         {
-            var validRoles = await context.Roles
+            var roles = await context.Roles
                 .Where(r => dto.Roles.Contains(r.Name) && r.CompanyId == companyId)
-                .Select(r => r.Name)
+                .Select(r => r.Id)
                 .ToListAsync();
 
-            foreach (var roleName in validRoles)
+            if (roles.Any())
             {
-                var addToRoleResult = await userManager.AddToRoleAsync(user, roleName);
-                if (!addToRoleResult.Succeeded)
-                    return new BadRequestObjectResult(addToRoleResult.Errors);
+                var existingUserRoleIds = await context.UserRoles
+                    .Where(ur => ur.UserId == user.Id)
+                    .Select(ur => ur.RoleId)
+                    .ToListAsync();
+
+                var newUserRoles = roles
+                    .Where(roleId => !existingUserRoleIds.Contains(roleId))
+                    .Select(roleId => new IdentityUserRole<int>
+                    {
+                        UserId = user.Id,
+                        RoleId = roleId
+                    });
+
+                await context.UserRoles.AddRangeAsync(newUserRoles);
+                await context.SaveChangesAsync();
             }
         }
-
 
         return new OkObjectResult(new { Message = "User created successfully", UserId = user.Id });
     }
