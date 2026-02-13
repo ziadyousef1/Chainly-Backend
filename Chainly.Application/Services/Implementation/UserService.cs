@@ -131,23 +131,21 @@ public class UserService(UserManager<User> userManager, AppDbContext context, IH
         if (!result.Succeeded)
             return new BadRequestObjectResult(result.Errors);
 
-        if (dto.Roles != null && dto.Roles.Any())
+        if (dto.Roles is not null && dto.Roles.Any())
         {
-            foreach (var roleName in dto.Roles)
-            {
-                var role = await context.Roles
-                    .FirstOrDefaultAsync(r => r.Name == roleName && r.CompanyId == companyId);
+            var validRoles = await context.Roles
+                .Where(r => dto.Roles.Contains(r.Name) && r.CompanyId == companyId)
+                .Select(r => r.Name)
+                .ToListAsync();
 
-                if (role != null)
-                {
-                    context.UserRoles.Add(new IdentityUserRole<int>
-                    {
-                        UserId = user.Id,
-                        RoleId = role.Id
-                    });
-                }
+            foreach (var roleName in validRoles)
+            {
+                var addToRoleResult = await userManager.AddToRoleAsync(user, roleName);
+                if (!addToRoleResult.Succeeded)
+                    return new BadRequestObjectResult(addToRoleResult.Errors);
             }
         }
+
 
         return new OkObjectResult(new { Message = "User created successfully", UserId = user.Id });
     }
