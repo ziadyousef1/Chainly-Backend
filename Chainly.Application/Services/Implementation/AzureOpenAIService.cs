@@ -20,18 +20,18 @@ public class AzureOpenAIService : IAzureOpenAIService
 
     public async Task<string> GenerateOrderUpdateMessageAsync(string orderUpdate)
     {
-        var systemPrompt = @"You are a customer service assistant for Chainly supply chain management company. 
+        var systemPrompt = @"You are a customer service assistant for Fluvin supply chain management company. 
             Generate ONLY a direct customer update message. No thinking, no explanations, no placeholders like [Customer Name].
             
             Format exactly like this example:
-            'Dear Customer, Your order is currently [status]. As of [date], it remains in this stage. We appreciate your patience and will provide further updates as soon as more information is available. Thank you for choosing Chainly. Best regards, Customer Service Team, Chainly'
+            'Dear Customer, Your order is currently [status]. As of [date], it remains in this stage. We appreciate your patience and will provide further updates as soon as more information is available. Thank you for choosing Fluvin. Best regards, Customer Service Team, Fluvin'
             
             Replace [status] and [date] with actual information from the order data. Keep it simple, professional, and under 80 words.";
         
         var userPrompt = $@"Generate a customer update message using this order information: {orderUpdate}
             
             Write ONLY the message text - no explanations, no thinking process, no extra formatting. 
-            Use 'Dear Customer' as greeting and end with 'Best regards, Customer Service Team, Chainly'.
+            Use 'Dear Customer' as greeting and end with 'Best regards, Customer Service Team, Fluvin'.
             Include the actual order status and any relevant dates from the provided data.";
 
         var request = new AzureOpenAIRequestDto
@@ -69,7 +69,7 @@ public class AzureOpenAIService : IAzureOpenAIService
     {
         if (response.Length < 20 || response.Contains("I'll") || response.Contains("Here's"))
         {
-            return "Dear Customer, This is an update on your order. We are currently processing your request and will provide further updates as soon as more information becomes available. Thank you for choosing Chainly. Best regards, Customer Service Team, Chainly";
+            return "Dear Customer, This is an update on your order. We are currently processing your request and will provide further updates as soon as more information becomes available. Thank you for choosing Fluvin. Best regards, Customer Service Team, Chainly";
         }
         
         return response.Trim();
