@@ -11,10 +11,10 @@ public class RolesController(IRoleService roleService) : BaseController
 {
     [HttpGet]
     [Authorize(Permissions.Roles.View)]
-    public async Task<IActionResult> GetAllRoles([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    public async Task<IActionResult> GetAllRoles(int pageNumber = 1, int pageSize = 10, string? search = null)
     {
         int companyId = GetCompanyId();
-        return await roleService.GetAllRolesAsync(companyId, pageNumber, pageSize);
+        return await roleService.GetAllRolesAsync(companyId, pageNumber, pageSize, search);
     }
 
     [HttpPost]

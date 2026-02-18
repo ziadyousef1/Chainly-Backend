@@ -11,7 +11,7 @@ namespace Chainly.Application.Services.Implementation;
 
 public class RoleService(RoleManager<Role> roleManager, AppDbContext context) : IRoleService
 {
-    public async Task<IActionResult> GetAllRolesAsync(int companyId, int pageNumber = 1, int pageSize = 10)
+    public async Task<IActionResult> GetAllRolesAsync(int companyId, int pageNumber = 1, int pageSize = 10, string? search = null)
     {
         if (pageNumber <= 0) pageNumber = 1;
         if (pageSize <= 0) pageSize = 10;
@@ -19,6 +19,9 @@ public class RoleService(RoleManager<Role> roleManager, AppDbContext context) : 
         var query = roleManager.Roles
             .Where(r => r.CompanyId == companyId);
 
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(r => r.Name.Contains(search));
+        
         var totalCount = await query.CountAsync();
 
         var roles = await query
