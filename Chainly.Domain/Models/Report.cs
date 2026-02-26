@@ -12,20 +12,18 @@ namespace Chainly.Domain.Models
         public int Id { get; set; }
         public int ProductionLineId { get; set; }
         public ProductionLine ProductionLine { get; set; }
-        public string SessionId { get; set; } = string.Empty;
-
-        public string? VideoName { get; set; }
-        public DateTime ReportDate { get; set; }
         public int GoodProducts { get; set; }
-
-        public virtual ICollection<DefectiveProduct> DefectiveProducts { get; set; } = new List<DefectiveProduct>();
-
-
-        [NotMapped] public int DefectiveProductsCount => DefectiveProducts?.Count ?? 0;
-
-        [NotMapped] public int TotalProducts => GoodProducts + DefectiveProductsCount;
+        public int DefectiveProducts { get; set; }
+        public DateTime StartedAt { get; set; }
+        public DateTime? EndedAt { get; set; }
+        public string? VideoName { get; set; }
+        [NotMapped] public int TotalProducts => GoodProducts + DefectiveProducts;
 
         [NotMapped]
-        public double DefectiveRatio => TotalProducts == 0 ? 0 : (double)DefectiveProductsCount / TotalProducts;
+        public double DefectiveRatio =>
+            TotalProducts == 0 ? 0 : Math.Round((double)DefectiveProducts / TotalProducts * 100, 2);
+
+        [NotMapped]
+        public double GoodRatio => TotalProducts == 0 ? 0 : Math.Round((double)GoodProducts / TotalProducts * 100, 2);
     }
 }

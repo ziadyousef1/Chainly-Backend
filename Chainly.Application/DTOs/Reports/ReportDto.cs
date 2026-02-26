@@ -5,11 +5,13 @@ namespace Chainly.Application.DTOs.Reports;
 public class ReportDto
 {
     public int ReportId { get; set; }
-    public string VideoName { get; set; } = string.Empty;
     public int TotalProducts { get; set; }
-    public int DefectiveCount { get; set; }
-    public int NonDefectiveCount { get; set; }
-    public string ReportDate { get; set; }
-    public ProductionLineDto ProductionLine { get; set; } = new();
-    public List<DefectiveProductReportDto> DefectiveProducts { get; set; } = new();
+    public int GoodProducts { get; set; }
+    public int DefectiveProducts { get; set; }
+    public double GoodRatio { get; set; }
+    public double DefectiveRatio { get; set; }
+    public string StartedAt { get; set; }
+    public string? EndedAt { get; set; }
+    public int ProductionLineId { get; set; }
+    public string ProductionLineName { get; set; }
 }

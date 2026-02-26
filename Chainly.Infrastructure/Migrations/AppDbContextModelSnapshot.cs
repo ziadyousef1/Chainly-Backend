@@ -48,31 +48,6 @@ namespace Chainly.Data.Migrations
                     b.ToTable("Companies");
                 });
 
-            modelBuilder.Entity("Chainly.Domain.Models.DefectiveProduct", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ProductId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("ReportId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("Time")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReportId");
-
-                    b.ToTable("DefectiveProducts");
-                });
-
             modelBuilder.Entity("Chainly.Domain.Models.Material", b =>
                 {
                     b.Property<int>("Id")
@@ -95,28 +70,6 @@ namespace Chainly.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Materials");
-                });
-
-            modelBuilder.Entity("Chainly.Domain.Models.NonDefectiveProduct", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ProductId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("ReportId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReportId");
-
-                    b.ToTable("NonDefectiveProducts");
                 });
 
             modelBuilder.Entity("Chainly.Domain.Models.Order", b =>
@@ -250,18 +203,20 @@ namespace Chainly.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("DefectiveProducts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("GoodProducts")
                         .HasColumnType("int");
 
                     b.Property<int>("ProductionLineId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("ReportDate")
+                    b.Property<DateTime>("StartedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("SessionId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("VideoName")
                         .HasColumnType("nvarchar(max)");
@@ -644,28 +599,6 @@ namespace Chainly.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("Chainly.Domain.Models.DefectiveProduct", b =>
-                {
-                    b.HasOne("Chainly.Domain.Models.Report", "Report")
-                        .WithMany("DefectiveProducts")
-                        .HasForeignKey("ReportId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Report");
-                });
-
-            modelBuilder.Entity("Chainly.Domain.Models.NonDefectiveProduct", b =>
-                {
-                    b.HasOne("Chainly.Domain.Models.Report", "Report")
-                        .WithMany()
-                        .HasForeignKey("ReportId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Report");
-                });
-
             modelBuilder.Entity("Chainly.Domain.Models.Order", b =>
                 {
                     b.HasOne("Chainly.Domain.Models.Company", "Company")
@@ -881,11 +814,6 @@ namespace Chainly.Data.Migrations
             modelBuilder.Entity("Chainly.Domain.Models.ProductionLine", b =>
                 {
                     b.Navigation("Reports");
-                });
-
-            modelBuilder.Entity("Chainly.Domain.Models.Report", b =>
-                {
-                    b.Navigation("DefectiveProducts");
                 });
 
             modelBuilder.Entity("Chainly.Domain.Models.Supplier", b =>

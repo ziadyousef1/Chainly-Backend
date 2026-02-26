@@ -15,16 +15,12 @@ namespace Chainly.Data
         public DbSet<Supplier> Suppliers { get; set; }
         public DbSet<Material> Materials { get; set; }
         public DbSet<SupplierMaterial> SupplierMaterials { get; set; }
-        public DbSet<DefectiveProduct> DefectiveProducts { get; set; }
-
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderTracking> OrderTracking { get; set; }
         public DbSet<SalesData> SalesData { get; set; }
 
         public DbSet<Product> Products { get; set; }
-
-        public DbSet<NonDefectiveProduct> NonDefectiveProducts { get; set; }
-
+        
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -39,12 +35,6 @@ namespace Chainly.Data
                 .HasMany(pl => pl.Reports)
                 .WithOne(r => r.ProductionLine)
                 .HasForeignKey(r => r.ProductionLineId)
-                .OnDelete(DeleteBehavior.Cascade);
-            // Configure one-to-many relationship between Report and DefectiveProduct
-            builder.Entity<Report>()
-                .HasMany(r => r.DefectiveProducts)
-                .WithOne(dp => dp.Report)
-                .HasForeignKey(dp => dp.ReportId)
                 .OnDelete(DeleteBehavior.Cascade);
             // Configure many-to-many relationship between Supplier and Material through SupplierMaterial
             builder.Entity<SupplierMaterial>()
