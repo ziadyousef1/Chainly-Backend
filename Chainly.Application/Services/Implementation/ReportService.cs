@@ -18,13 +18,13 @@ public class ReportService(AppDbContext context) : IReportService
         if (pageSize <= 0) pageSize = 10;
 
         var query = context.Reports
-            .Where(r => r.ProductionLine.CompanyId == companyId);
+            .Where(r => r.ProductionLine.CompanyId == companyId && r.VideoName == null);
 
         if (startDate.HasValue)
-            query = query.Where(r => r.EndedAt >= startDate.Value);
+            query = query.Where(r => r.EndedAt.HasValue && r.EndedAt.Value.Date >= startDate.Value);
 
         if (endDate.HasValue)
-            query = query.Where(r => r.StartedAt <= endDate.Value);
+            query = query.Where(r => r.StartedAt.Date <= endDate.Value);
 
         if (productionLineId.HasValue)
             query = query.Where(r => r.ProductionLineId == productionLineId.Value);
@@ -82,7 +82,8 @@ public class ReportService(AppDbContext context) : IReportService
             .Include(r => r.ProductionLine)
             .Where(r => r.ProductionLine.CompanyId == companyId &&
                         r.StartedAt >= startDate &&
-                        r.StartedAt <= endDate);
+                        r.StartedAt <= endDate &&
+                        r.VideoName == null);
 
         var groupedReports = await reportsQuery
             .GroupBy(r => new { r.ProductionLineId, r.ProductionLine.LineName })
@@ -155,13 +156,8 @@ public class ReportService(AppDbContext context) : IReportService
         return new OkObjectResult("Products updated successfully.");
     }
 
-    public async Task<IActionResult> GetProductionLineReport(
-        int companyId,
-        int productionLineId,
-        int pageNumber = 1,
-        int pageSize = 10,
-        DateTime? startDate = null,
-        DateTime? endDate = null)
+    public async Task<IActionResult> GetProductionLineReport(int companyId, int productionLineId, int pageNumber = 1,
+        int pageSize = 10, DateTime? startDate = null, DateTime? endDate = null)
     {
         if (pageNumber <= 0) pageNumber = 1;
         if (pageSize <= 0) pageSize = 10;
@@ -169,13 +165,14 @@ public class ReportService(AppDbContext context) : IReportService
         var query = context.Reports
             .AsNoTracking()
             .Where(r => r.ProductionLineId == productionLineId &&
-                        r.ProductionLine.CompanyId == companyId);
+                        r.ProductionLine.CompanyId == companyId &&
+                        r.VideoName == null);
 
         if (startDate.HasValue)
-            query = query.Where(r => r.EndedAt >= startDate.Value);
+            query = query.Where(r => r.EndedAt.HasValue && r.EndedAt.Value.Date >= startDate.Value);
 
         if (endDate.HasValue)
-            query = query.Where(r => r.StartedAt <= endDate.Value);
+            query = query.Where(r => r.StartedAt.Date <= endDate.Value);
 
         var summary = await query
             .GroupBy(r => new { r.ProductionLineId, r.ProductionLine.LineName })
@@ -244,5 +241,199 @@ public class ReportService(AppDbContext context) : IReportService
         await context.SaveChangesAsync();
 
         return new OkObjectResult(new { message = "Report deleted successfully." });
+    }
+
+    public async Task<IActionResult> StoreVideoReportAsync(int companyId, CreateVideoReportDto dto)
+    {
+        var productionLineExists = await context.ProductionLines
+            .AnyAsync(pl => pl.Id == dto.ProductionLineId && pl.CompanyId == companyId);
+
+        if (!productionLineExists)
+            return new NotFoundObjectResult(new
+            {
+                message = "Production line not found for this company."
+            });
+
+        var report = new Report
+        {
+            ProductionLineId = dto.ProductionLineId,
+            StartedAt = DateTime.UtcNow,
+            EndedAt = null,
+            GoodProducts = dto.GoodProducts,
+            DefectiveProducts = dto.DefectiveProducts,
+            VideoName = dto.VideoName
+        };
+
+        await context.Reports.AddAsync(report);
+        await context.SaveChangesAsync();
+
+        return new OkObjectResult(new
+        {
+            ReportId = report.Id,
+            message = "Report created successfully."
+        });
+    }
+
+    public async Task<IActionResult> GetAllVideoReportsAsync(int companyId, string? search = null,
+        DateTime? startDate = null, DateTime? endDate = null, int pageNumber = 1, int pageSize = 10)
+    {
+        if (pageNumber <= 0) pageNumber = 1;
+        if (pageSize <= 0) pageSize = 10;
+
+        var query = context.Reports
+            .AsNoTracking()
+            .Where(r =>
+                r.ProductionLine.CompanyId == companyId &&
+                !string.IsNullOrEmpty(r.VideoName));
+
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(r => r.VideoName!.Contains(search));
+
+
+        if (startDate.HasValue)
+            query = query.Where(r => r.StartedAt.Date >= startDate.Value);
+
+
+        if (endDate.HasValue)
+            query = query.Where(r => r.StartedAt.Date <= endDate.Value);
+
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .OrderByDescending(r => r.StartedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Select(r => new
+            {
+                ReportId = r.Id,
+                StartedAt = r.StartedAt.ToAppFormat(),
+                r.VideoName,
+                r.ProductionLineId,
+                ProductionLineName = r.ProductionLine.LineName
+            })
+            .ToListAsync();
+
+        return new OkObjectResult(new
+        {
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+            Items = items
+        });
+    }
+
+    public async Task<IActionResult> GetVideoReportByIdAsync(int companyId, int reportId)
+    {
+        var report = await context.Reports
+            .AsNoTracking()
+            .Include(r => r.ProductionLine)
+            .FirstOrDefaultAsync(r =>
+                r.Id == reportId &&
+                r.ProductionLine.CompanyId == companyId &&
+                !string.IsNullOrEmpty(r.VideoName));
+
+        if (report == null)
+            return new NotFoundObjectResult(new { message = "Video report not found." });
+
+        var result = new
+        {
+            ReportId = report.Id,
+            report.ProductionLineId,
+            ProductionLineName = report.ProductionLine.LineName,
+            StartedAt = report.StartedAt.ToAppFormat(),
+            report.GoodProducts,
+            report.DefectiveProducts,
+            report.TotalProducts,
+            report.GoodRatio,
+            report.DefectiveRatio
+        };
+
+        return new OkObjectResult(result);
+    }
+
+    public async Task<IActionResult> GetVideoReportsInsights(int companyId, int? productionLineId = null,
+        DateTime? startDate = null, DateTime? endDate = null, int pageNumber = 1, int pageSize = 10)
+    {
+        if (pageNumber <= 0) pageNumber = 1;
+        if (pageSize <= 0) pageSize = 10;
+
+        var query = context.Reports
+            .AsNoTracking()
+            .Where(r =>
+                r.ProductionLine.CompanyId == companyId &&
+                !string.IsNullOrEmpty(r.VideoName));
+
+        if (productionLineId.HasValue)
+            query = query.Where(r => r.ProductionLineId == productionLineId.Value);
+
+        if (startDate.HasValue)
+            query = query.Where(r => r.StartedAt.Date >= startDate.Value);
+
+        if (endDate.HasValue)
+            query = query.Where(r => r.StartedAt.Date <= endDate.Value);
+
+        var summaryData = await query
+            .GroupBy(r => 1)
+            .Select(g => new
+            {
+                TotalProducts = g.Sum(x => x.GoodProducts + x.DefectiveProducts),
+                GoodProducts = g.Sum(x => x.GoodProducts),
+                DefectiveProducts = g.Sum(x => x.DefectiveProducts)
+            })
+            .FirstOrDefaultAsync();
+
+        var totalProducts = summaryData?.TotalProducts ?? 0;
+        var goodProducts = summaryData?.GoodProducts ?? 0;
+        var defectiveProducts = summaryData?.DefectiveProducts ?? 0;
+
+        var goodRatio = totalProducts == 0 ? 0 : Math.Round(goodProducts / (double)totalProducts * 100, 2);
+
+        var defectiveRatio = totalProducts == 0 ? 0 : Math.Round(defectiveProducts / (double)totalProducts * 100, 2);
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .OrderByDescending(r => r.StartedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Select(r => new
+            {
+                ReportId = r.Id,
+                r.VideoName,
+                r.ProductionLineId,
+                ProductionLineName = r.ProductionLine.LineName,
+                StartedAt = r.StartedAt.ToAppFormat(),
+                GoodProducts = r.GoodProducts,
+                DefectiveProducts = r.DefectiveProducts,
+                TotalProducts = r.GoodProducts + r.DefectiveProducts,
+                GoodRatio = (r.GoodProducts + r.DefectiveProducts) == 0
+                    ? 0
+                    : Math.Round(r.GoodProducts / (double)(r.GoodProducts + r.DefectiveProducts) * 100, 2),
+                DefectiveRatio = (r.GoodProducts + r.DefectiveProducts) == 0
+                    ? 0
+                    : Math.Round(r.DefectiveProducts / (double)(r.GoodProducts + r.DefectiveProducts) * 100, 2)
+            })
+            .ToListAsync();
+
+        var result = new
+        {
+            Summary = new
+            {
+                TotalProducts = totalProducts,
+                GoodProducts = goodProducts,
+                DefectiveProducts = defectiveProducts,
+                GoodRatio = goodRatio,
+                DefectiveRatio = defectiveRatio
+            },
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+            Items = items
+        };
+
+        return new OkObjectResult(result);
     }
 }

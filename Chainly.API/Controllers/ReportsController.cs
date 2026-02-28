@@ -1,3 +1,5 @@
+using Chainly.Application.DTOs.Reports;
+
 namespace Chainly.API.Controllers;
 
 [Route("api/[controller]")]
@@ -55,5 +57,40 @@ public class ReportsController(IReportService reportService, IAiInsightsService 
     {
         int companyId = GetCompanyId();
         return await reportService.DeleteReportAsync(companyId, reportId);
+    }
+
+    [HttpPost("/video-reports")]
+    [Authorize(Permissions.Reports.Create)]
+    public async Task<IActionResult> StoreVideoReport([FromBody] CreateVideoReportDto dto)
+    {
+        int companyId = GetCompanyId();
+        return await reportService.StoreVideoReportAsync(companyId, dto);
+    }
+
+    [HttpGet("/video-reports")]
+    public async Task<IActionResult> GetAllVideoReports(string? search, DateTime? startDate,
+        DateTime? endDate, int pageNumber = 1, int pageSize = 10)
+    {
+        int companyId = GetCompanyId();
+        return await reportService.GetAllVideoReportsAsync(companyId, search, startDate, endDate, pageNumber, pageSize);
+    }
+
+    [HttpGet("/video-reports/{reportId}")]
+    [Authorize(Permissions.Reports.View)]
+    public async Task<IActionResult> GetVideoReportById(int reportId)
+    {
+        int companyId = GetCompanyId();
+        return await reportService.GetVideoReportByIdAsync(companyId, reportId);
+    }
+
+    [HttpGet("/video-reports/insights")]
+    [Authorize(Permissions.Reports.View)]
+    public async Task<IActionResult> GetVideoReportsInsights(int? productionLineId, DateTime? startDate,
+        DateTime? endDate, int pageNumber = 1, int pageSize = 10)
+    {
+        int companyId = GetCompanyId();
+
+        return await reportService.GetVideoReportsInsights(companyId, productionLineId, startDate, endDate, pageNumber,
+            pageSize);
     }
 }
