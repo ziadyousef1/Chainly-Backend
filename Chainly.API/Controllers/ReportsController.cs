@@ -68,6 +68,7 @@ public class ReportsController(IReportService reportService, IAiInsightsService 
     }
 
     [HttpGet("/video-reports")]
+    [Authorize(Permissions.Reports.View)]
     public async Task<IActionResult> GetAllVideoReports(string? search, DateTime? startDate,
         DateTime? endDate, int pageNumber = 1, int pageSize = 10)
     {
