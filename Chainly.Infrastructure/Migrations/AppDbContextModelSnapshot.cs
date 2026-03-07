@@ -22,6 +22,29 @@ namespace Chainly.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Chainly.Domain.Models.Camera", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CameraSource")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ProductionLineId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductionLineId")
+                        .IsUnique();
+
+                    b.ToTable("Cameras");
+                });
+
             modelBuilder.Entity("Chainly.Domain.Models.Company", b =>
                 {
                     b.Property<int>("Id")
@@ -599,6 +622,17 @@ namespace Chainly.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Chainly.Domain.Models.Camera", b =>
+                {
+                    b.HasOne("Chainly.Domain.Models.ProductionLine", "ProductionLine")
+                        .WithOne("Camera")
+                        .HasForeignKey("Chainly.Domain.Models.Camera", "ProductionLineId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProductionLine");
+                });
+
             modelBuilder.Entity("Chainly.Domain.Models.Order", b =>
                 {
                     b.HasOne("Chainly.Domain.Models.Company", "Company")
@@ -813,6 +847,9 @@ namespace Chainly.Data.Migrations
 
             modelBuilder.Entity("Chainly.Domain.Models.ProductionLine", b =>
                 {
+                    b.Navigation("Camera")
+                        .IsRequired();
+
                     b.Navigation("Reports");
                 });
 

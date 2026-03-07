@@ -18,9 +18,9 @@ namespace Chainly.Data
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderTracking> OrderTracking { get; set; }
         public DbSet<SalesData> SalesData { get; set; }
-
         public DbSet<Product> Products { get; set; }
-        
+        public DbSet<Camera> Cameras { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -72,6 +72,11 @@ namespace Chainly.Data
             builder.Entity<Role>()
                 .HasIndex(r => new { r.Name, r.CompanyId })
                 .IsUnique();
+            builder.Entity<Camera>()
+                .HasOne(c => c.ProductionLine)
+                .WithOne(p => p.Camera)
+                .HasForeignKey<Camera>(c => c.ProductionLineId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.Entity<SalesData>(entity =>
             {

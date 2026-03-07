@@ -83,4 +83,12 @@ public static class Permissions
         public const string Delete = "Orders.Delete";
         public const string Import = "Orders.Import";
     }
+
+    public static class Cameras
+    {
+        public const string View = "Cameras.View";
+        public const string Create = "Cameras.Create";
+        public const string Update = "Cameras.Update";
+        public const string Delete = "Cameras.Delete";
+    }
 }

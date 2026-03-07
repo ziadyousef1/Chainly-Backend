@@ -14,5 +14,6 @@ namespace Chainly.Domain.Models
         public Company Company { get; set; }
         public string? Description { get; set; }
         public ICollection<Report> Reports { get; set; }
+        public Camera Camera { get; set; }
     }
 }
