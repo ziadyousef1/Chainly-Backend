@@ -1,5 +1,6 @@
 using Chainly.Infrastructure.Extensions;
 using Chainly.Infrastructure.Helpers;
+using Scalar.AspNetCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);

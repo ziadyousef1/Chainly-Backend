@@ -8,5 +8,4 @@ global using Chainly.Infrastructure.OTP_Validation;
 global using Chainly.Domain.Constants;
 global using Chainly.Application.DTOs;
 global using Chainly.Application.Services.Interfaces;
-global using Scalar.AspNetCore;
 global using Chainly.Application.DTOs;

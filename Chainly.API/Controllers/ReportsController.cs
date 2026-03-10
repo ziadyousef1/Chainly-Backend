@@ -1,3 +1,4 @@
+using Chainly.Application.DTOs.AiInsights;
 using Chainly.Application.DTOs.Reports;
 
 namespace Chainly.API.Controllers;
@@ -93,5 +94,31 @@ public class ReportsController(IReportService reportService, IAiInsightsService 
 
         return await reportService.GetVideoReportsInsights(companyId, productionLineId, startDate, endDate, pageNumber,
             pageSize);
+    }
+
+    [HttpPost("start-session")]
+    [Authorize(Permissions.Reports.Create)]
+    public async Task<IActionResult> StartSession(int productionLineId)
+    {
+        var dto = new StartSessionRequestDto()
+        {
+            CompanyId = GetCompanyId(),
+            ProductionLineId = productionLineId
+        };
+
+        return await aiInsightsService.StartSessionAsync(dto);
+    }
+
+    [HttpPost("{reportId}/close-session")]
+    [Authorize(Permissions.Reports.Update)]
+    public async Task<IActionResult> CloseSession(int reportId)
+    {
+        var dto = new CloseSessionRequestDto()
+        {
+            CompanyId = GetCompanyId(),
+            ReportId = reportId
+        };
+
+        return await aiInsightsService.CloseSessionAsync(dto);
     }
 }
