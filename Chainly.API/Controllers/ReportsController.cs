@@ -37,6 +37,28 @@ public class ReportsController(IReportService reportService, IAiInsightsService 
             endDate);
     }
 
+    [HttpGet("production-line/{productionLineId}/reports")]
+    [Authorize(Permissions.Reports.View)]
+    public async Task<IActionResult> GetProductionLineReports(
+        int productionLineId,
+        int pageNumber = 1,
+        int pageSize = 10,
+        DateTime? startDate = null,
+        DateTime? endDate = null)
+    {
+        int companyId = GetCompanyId();
+        return await reportService.GetProductionLineReportsAsync(companyId, productionLineId, pageNumber, pageSize, startDate,
+            endDate);
+    }
+
+    [HttpGet("production-line/{productionLineId}/summary")]
+    [Authorize(Permissions.Reports.View)]
+    public async Task<IActionResult> GetProductionLineSummary(int productionLineId)
+    {
+        int companyId = GetCompanyId();
+        return await reportService.GetProductionLineSummaryAsync(companyId, productionLineId);
+    }
+
     [HttpGet("monthly-summary")]
     [Authorize]
     public async Task<IActionResult> GetMonthlyProductionLineSummary(int? month = null, int? year = null,

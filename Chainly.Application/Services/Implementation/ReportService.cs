@@ -228,6 +228,100 @@ public class ReportService(AppDbContext context) : IReportService
         return new OkObjectResult(result);
     }
 
+    public async Task<IActionResult> GetProductionLineReportsAsync(int companyId, int productionLineId, int pageNumber = 1,
+        int pageSize = 10, DateTime? startDate = null, DateTime? endDate = null)
+    {
+        if (pageNumber <= 0) pageNumber = 1;
+        if (pageSize <= 0) pageSize = 10;
+
+        var query = context.Reports
+            .AsNoTracking()
+            .Where(r => r.ProductionLineId == productionLineId &&
+                        r.ProductionLine.CompanyId == companyId &&
+                        r.VideoName == null);
+
+        if (startDate.HasValue)
+            query = query.Where(r => r.EndedAt.HasValue && r.EndedAt.Value.Date >= startDate.Value);
+
+        if (endDate.HasValue)
+            query = query.Where(r => r.StartedAt.Date <= endDate.Value);
+
+        var totalCount = await query.CountAsync();
+
+        var reports = await query
+            .OrderByDescending(r => r.StartedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Select(r => new ReportDto()
+            {
+                ReportId = r.Id,
+                StartedAt = r.StartedAt.ToAppFormat(),
+                EndedAt = r.EndedAt.HasValue ? r.EndedAt.Value.ToAppFormat() : null,
+                ProductionLineId = r.ProductionLineId,
+                ProductionLineName = r.ProductionLine.LineName,
+                GoodProducts = r.GoodProducts,
+                DefectiveProducts = r.DefectiveProducts,
+                TotalProducts = r.TotalProducts,
+                DefectiveRatio = r.DefectiveRatio,
+                GoodRatio = r.GoodRatio,
+            })
+            .ToListAsync();
+
+        var result = new
+        {
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+            Items = reports
+        };
+
+        return new OkObjectResult(result);
+    }
+
+    public async Task<IActionResult> GetProductionLineSummaryAsync(int companyId, int productionLineId)
+    {
+        var query = context.Reports
+            .AsNoTracking()
+            .Where(r => r.ProductionLineId == productionLineId &&
+                        r.ProductionLine.CompanyId == companyId &&
+                        r.VideoName == null);
+
+        var summary = await query
+            .GroupBy(r => 1)
+            .Select(g => new
+            {
+                TotalProducts = g.Sum(x => x.GoodProducts + x.DefectiveProducts),
+                GoodProducts = g.Sum(x => x.GoodProducts),
+                DefectiveProducts = g.Sum(x => x.DefectiveProducts)
+            })
+            .FirstOrDefaultAsync();
+
+        if (summary == null || summary.TotalProducts == 0)
+            return new OkObjectResult(new
+            {
+                TotalProducts = 0,
+                FlawlessProducts = 0,
+                DefectedProducts = 0,
+                FlawlessPercentage = 0,
+                DefectedPercentage = 0
+            });
+
+        var flawlessPercentage = Math.Round(summary.GoodProducts / (double)summary.TotalProducts * 100, 0);
+        var defectedPercentage = Math.Round(summary.DefectiveProducts / (double)summary.TotalProducts * 100, 0);
+
+        var result = new
+        {
+            TotalProducts = summary.TotalProducts,
+            FlawlessProducts = summary.GoodProducts,
+            DefectedProducts = summary.DefectiveProducts,
+            FlawlessPercentage = (int)flawlessPercentage,
+            DefectedPercentage = (int)defectedPercentage
+        };
+
+        return new OkObjectResult(result);
+    }
+
     public async Task<IActionResult> DeleteReportAsync(int companyId, int reportId)
     {
         var report = await context.Reports

@@ -17,6 +17,11 @@ public interface IReportService
     Task<IActionResult> GetProductionLineReport(int companyId, int productionLineId, int pageNumber = 1,
         int pageSize = 10, DateTime? startDate = null, DateTime? endDate = null);
 
+    Task<IActionResult> GetProductionLineReportsAsync(int companyId, int productionLineId, int pageNumber = 1,
+        int pageSize = 10, DateTime? startDate = null, DateTime? endDate = null);
+
+    Task<IActionResult> GetProductionLineSummaryAsync(int companyId, int productionLineId);
+
     Task<IActionResult> DeleteReportAsync(int companyId, int reportId);
     Task<IActionResult> StoreVideoReportAsync(int companyId, CreateVideoReportDto dto);
 
