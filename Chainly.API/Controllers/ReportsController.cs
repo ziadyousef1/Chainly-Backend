@@ -5,7 +5,7 @@ namespace Chainly.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class ReportsController(IReportService reportService, IAiInsightsService aiInsightsService)
+public class ReportsController(IReportService reportService, IAiInsightsService aiInsightsService, IFirebaseRealtimeService firebaseRealtimeService)
     : BaseController
 {
     [HttpGet]
@@ -69,9 +69,35 @@ public class ReportsController(IReportService reportService, IAiInsightsService 
     }
 
     [HttpPost("{reportId}/add-products")]
+    [Authorize(Permissions.Reports.Update)]
     public async Task<IActionResult> AddGoodProducts(int reportId, bool defect, int? count = 1)
     {
         return await reportService.AddProductsAsync(reportId, defect, count);
+    }
+
+    [HttpPost("{reportId}/start-realtime")]
+    [Authorize(Permissions.Reports.Update)]
+    public async Task<IActionResult> StartRealtimeMonitoring(int reportId)
+    {
+        int companyId = GetCompanyId();
+        await firebaseRealtimeService.StartMonitoringReportAsync(companyId, reportId);
+        return Ok(new { message = "Real-time monitoring started for report", report_id = reportId });
+    }
+
+    [HttpPost("{reportId}/stop-realtime")]
+    [Authorize(Permissions.Reports.Update)]
+    public async Task<IActionResult> StopRealtimeMonitoring(int reportId)
+    {
+        await firebaseRealtimeService.StopMonitoringReportAsync(reportId);
+        return Ok(new { message = "Real-time monitoring stopped", report_id = reportId });
+    }
+
+    [HttpGet("{reportId}/live-count")]
+    [Authorize(Permissions.Reports.View)]
+    public async Task<IActionResult> GetLiveProductCount(int reportId)
+    {
+        int companyId = GetCompanyId();
+        return await firebaseRealtimeService.GetLiveProductCountAsync(companyId, reportId);
     }
 
     [HttpDelete("{reportId}")]

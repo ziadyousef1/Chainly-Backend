@@ -17,6 +17,7 @@ namespace Chainly.Application.Extensions
             services.Configure<AzureOpenAISettings>(configuration.GetSection("AzureOpenAISettings"));
             services.Configure<AiApiSettings>(configuration.GetSection("AiApi"));
             services.Configure<CloudStorageSettings>(configuration.GetSection(CloudStorageSettings.AzureStorage));
+            services.Configure<FirebaseSettings>(configuration.GetSection("Firebase"));
 
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IUserService, UserService>();
@@ -44,6 +45,7 @@ namespace Chainly.Application.Extensions
             services.AddHttpClient();
             services.AddScoped<IExternalApiService, ExternalApiService>();
             services.AddScoped<IAiInsightsService, AiInsightsService>();
+            services.AddScoped<IFirebaseRealtimeService, FirebaseRealtimeService>();
             
             return services;
         }

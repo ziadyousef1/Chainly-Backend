@@ -5,11 +5,12 @@ using Chainly.Data;
 using Chainly.Domain.Models;
 using Chainly.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Chainly.Application.Services.Implementation;
 
-public class ReportService(AppDbContext context) : IReportService
+public class ReportService(AppDbContext context, IHubContext<Chainly.Infrastructure.Hubs.ReportHub> hubContext) : IReportService
 {
     public async Task<IActionResult> GetAllReportsAsync(int companyId, int pageNumber = 1, int pageSize = 10,
         DateTime? startDate = null, DateTime? endDate = null, int? productionLineId = null, string? search = null)
@@ -153,6 +154,16 @@ public class ReportService(AppDbContext context) : IReportService
 
         await context.SaveChangesAsync();
 
+        await hubContext.Clients.Group($"ProductionLine_{report.ProductionLineId}")
+            .SendAsync("ProductionLineUpdated", new
+            {
+                ProductionLineId = report.ProductionLineId,
+                ReportId = report.Id,
+                GoodProducts = report.GoodProducts,
+                DefectiveProducts = report.DefectiveProducts,
+                TotalProducts = report.GoodProducts + report.DefectiveProducts
+            });
+
         return new OkObjectResult("Products updated successfully.");
     }
 
@@ -183,12 +194,16 @@ public class ReportService(AppDbContext context) : IReportService
                 GoodProducts = g.Sum(x => x.GoodProducts),
                 DefectiveProducts = g.Sum(x => x.DefectiveProducts),
                 TotalProducts = g.Sum(x => x.GoodProducts + x.DefectiveProducts),
-                GoodRatio = Math.Round(
-                    g.Sum(x => x.GoodProducts) /
-                    (double)(g.Sum(x => x.GoodProducts) + g.Sum(x => x.DefectiveProducts)) * 100, 2),
-                DefectiveRatio = Math.Round(
-                    g.Sum(x => x.DefectiveProducts) /
-                    (double)(g.Sum(x => x.GoodProducts) + g.Sum(x => x.DefectiveProducts)) * 100, 2)
+                GoodRatio = (g.Sum(x => x.GoodProducts) + g.Sum(x => x.DefectiveProducts)) == 0
+                    ? 0
+                    : Math.Round(
+                        g.Sum(x => x.GoodProducts) /
+                        (double)(g.Sum(x => x.GoodProducts) + g.Sum(x => x.DefectiveProducts)) * 100, 2),
+                DefectiveRatio = (g.Sum(x => x.GoodProducts) + g.Sum(x => x.DefectiveProducts)) == 0
+                    ? 0
+                    : Math.Round(
+                        g.Sum(x => x.DefectiveProducts) /
+                        (double)(g.Sum(x => x.GoodProducts) + g.Sum(x => x.DefectiveProducts)) * 100, 2)
             })
             .FirstOrDefaultAsync();
 
