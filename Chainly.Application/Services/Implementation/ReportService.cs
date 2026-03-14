@@ -294,44 +294,33 @@ public class ReportService(AppDbContext context, IHubContext<Chainly.Infrastruct
         return new OkObjectResult(result);
     }
 
-    public async Task<IActionResult> GetProductionLineSummaryAsync(int companyId, int productionLineId)
+
+    public async Task<IActionResult> GetReportSummaryByIdAsync(int companyId, int reportId)
     {
-        var query = context.Reports
+        var report = await context.Reports
             .AsNoTracking()
-            .Where(r => r.ProductionLineId == productionLineId &&
-                        r.ProductionLine.CompanyId == companyId &&
-                        r.VideoName == null);
+            .Include(r => r.ProductionLine)
+            .FirstOrDefaultAsync(r => r.Id == reportId && r.ProductionLine.CompanyId == companyId && r.VideoName == null);
 
-        var summary = await query
-            .GroupBy(r => 1)
-            .Select(g => new
-            {
-                TotalProducts = g.Sum(x => x.GoodProducts + x.DefectiveProducts),
-                GoodProducts = g.Sum(x => x.GoodProducts),
-                DefectiveProducts = g.Sum(x => x.DefectiveProducts)
-            })
-            .FirstOrDefaultAsync();
+        if (report == null)
+        {
+            return new NotFoundObjectResult(new { message = "Report not found." });
+        }
 
-        if (summary == null || summary.TotalProducts == 0)
-            return new OkObjectResult(new
-            {
-                TotalProducts = 0,
-                FlawlessProducts = 0,
-                DefectedProducts = 0,
-                FlawlessPercentage = 0,
-                DefectedPercentage = 0
-            });
-
-        var flawlessPercentage = Math.Round(summary.GoodProducts / (double)summary.TotalProducts * 100, 0);
-        var defectedPercentage = Math.Round(summary.DefectiveProducts / (double)summary.TotalProducts * 100, 0);
+        var totalProducts = report.GoodProducts + report.DefectiveProducts;
+        var flawlessPercentage = totalProducts > 0 ? Math.Round(report.GoodProducts / (double)totalProducts * 100, 0) : 0;
+        var defectedPercentage = totalProducts > 0 ? Math.Round(report.DefectiveProducts / (double)totalProducts * 100, 0) : 0;
 
         var result = new
         {
-            TotalProducts = summary.TotalProducts,
-            FlawlessProducts = summary.GoodProducts,
-            DefectedProducts = summary.DefectiveProducts,
+            ReportId = report.Id,
+            ProductionLineId = report.ProductionLineId,
+            ProductionLineName = report.ProductionLine.LineName,
+            TotalProducts = totalProducts,
+            FlawlessProducts = report.GoodProducts,
+            DefectedProducts = report.DefectiveProducts,
             FlawlessPercentage = (int)flawlessPercentage,
-            DefectedPercentage = (int)defectedPercentage
+            DefectedPercentage = (int)defectedPercentage,
         };
 
         return new OkObjectResult(result);

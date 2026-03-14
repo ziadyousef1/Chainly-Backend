@@ -132,43 +132,5 @@ public class FirebaseRealtimeService : IFirebaseRealtimeService
         await Task.CompletedTask;
     }
 
-    public async Task<IActionResult> GetLiveProductCountAsync(int companyId, int reportId)
-    {
-        using var scope = _scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        
-        var report = await context.Reports
-            .Include(r => r.ProductionLine)
-            .FirstOrDefaultAsync(r => r.Id == reportId && r.ProductionLine.CompanyId == companyId);
-
-        if (report == null)
-            return new NotFoundObjectResult(new { message = "Report not found." });
-
-        if (_activeMonitors.TryGetValue(reportId, out var monitor))
-        {
-            return new OkObjectResult(new
-            {
-                ReportId = reportId,
-                ProductionLineId = report.ProductionLineId,
-                ProductionLineName = report.ProductionLine.LineName,
-                GoodCount = monitor.GoodCount,
-                DefectCount = monitor.DefectCount,
-                TotalCount = monitor.GoodCount + monitor.DefectCount,
-                IsActive = true,
-                LastUpdated = monitor.LastUpdated
-            });
-        }
-
-        return new OkObjectResult(new
-        {
-            ReportId = reportId,
-            ProductionLineId = report.ProductionLineId,
-            ProductionLineName = report.ProductionLine.LineName,
-            GoodCount = report.GoodProducts,
-            DefectCount = report.DefectiveProducts,
-            TotalCount = report.GoodProducts + report.DefectiveProducts,
-            IsActive = false,
-            LastUpdated = report.EndedAt ?? report.StartedAt
-        });
-    }
+    
 }
