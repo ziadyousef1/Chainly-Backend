@@ -56,6 +56,18 @@ public class AiInsightsService(
             camera_source = productionLine.Camera.CameraSource,
             production_line_id = productionLine.Id.ToString()
         };
+        
+        
+        if (_aiApiSettings.SkipInsightsApiCalls)
+        {
+
+            return new OkObjectResult(new OpenReportResponseDto
+            {
+                Status = "success",
+                ReportId = report.Id.ToString(),
+                Message = "Session started locally. AI Insights API call is skipped by configuration."
+            });
+        }
 
         var url = $"{_aiApiSettings.InsightsBaseUrl}/api/reports/open";
         var response = await externalApiService.PostAsync<OpenReportResponseDto>(url, request);
