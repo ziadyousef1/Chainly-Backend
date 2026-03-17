@@ -1,4 +1,4 @@
-using Chainly.Application.DTOs;
+using Chainly.Application.Configurations;
 using Chainly.Application.DTOs.Reports;
 using Chainly.Application.Services.Interfaces;
 using Chainly.Data;
@@ -7,11 +7,18 @@ using Chainly.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Chainly.Application.Services.Implementation;
 
-public class ReportService(AppDbContext context, IHubContext<Chainly.Infrastructure.Hubs.ReportHub> hubContext) : IReportService
+public class ReportService(
+    AppDbContext context,
+    IExternalApiService externalApiService,
+    IOptions<AiApiSettings> aiApiSettings,
+    IHubContext<Chainly.Infrastructure.Hubs.ReportHub> hubContext) : IReportService
 {
+    private readonly AiApiSettings _aiApiSettings = aiApiSettings.Value;
+    
     public async Task<IActionResult> GetAllReportsAsync(int companyId, int pageNumber = 1, int pageSize = 10,
         DateTime? startDate = null, DateTime? endDate = null, int? productionLineId = null, string? search = null)
     {
@@ -533,5 +540,70 @@ public class ReportService(AppDbContext context, IHubContext<Chainly.Infrastruct
         };
 
         return new OkObjectResult(result);
+    }
+    
+        public async Task<IActionResult> GetProductionLines(int companyId, int pageNumber = 1, int pageSize = 10,
+        string? search = null)
+    {
+        if (pageNumber <= 0) pageNumber = 1;
+        if (pageSize <= 0) pageSize = 10;
+
+        var query = context.ProductionLines
+            .AsNoTracking()
+            .Where(p => p.CompanyId == companyId);
+
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(p => p.LineName.Contains(search.Trim()));
+
+        var totalCount = await query.CountAsync();
+
+        var productionLines = await query
+            .OrderBy(p => p.LineName)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Select(p => new
+            {
+                p.Id,
+                p.LineName,
+                p.Description
+            })
+            .ToListAsync();
+
+        var url = $"{_aiApiSettings.InsightsBaseUrl}/api/reports";
+        var activeReports = await externalApiService.GetAsync<List<ActiveReportDto>>(url)
+                            ?? new List<ActiveReportDto>();
+        
+        var activeReportIds = activeReports
+            .Select(r => int.TryParse(r.ReportId, out var id) ? id : (int?)null)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .ToList();
+
+        var reports = await context.Reports
+            .Where(r => activeReportIds.Contains(r.Id))
+            .ToListAsync();
+
+        var items = productionLines.Select(line =>
+        {
+            var report = reports.FirstOrDefault(r => r.ProductionLineId == line.Id);
+
+            return new ProductionLineStatusDto
+            {
+                ProductionLineId = line.Id,
+                ProductionLineName = line.LineName,
+                ProductionLineDescription = line.Description,
+                Active = report != null,
+                ReportId = report?.Id
+            };
+        });
+
+        return new OkObjectResult(new
+        {
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+            Items = items
+        });
     }
 }

@@ -33,4 +33,6 @@ public interface IReportService
 
     Task<IActionResult> GetVideoReportsInsights(int companyId, int? productionLineId = null, DateTime? startDate = null,
         DateTime? endDate = null, int pageNumber = 1, int pageSize = 10);
+    
+    Task<IActionResult> GetProductionLines(int companyId, int pageNumber = 1, int pageSize = 10, string? search = null);
 }

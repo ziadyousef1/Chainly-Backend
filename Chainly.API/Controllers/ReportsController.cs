@@ -167,4 +167,16 @@ public class ReportsController(IReportService reportService, IAiInsightsService 
 
         return result;
     }
+    
+    [HttpGet("production-lines")]
+    [Authorize(Permissions.Reports.View)]
+    public async Task<IActionResult> GetProductionLinesStatus(
+        int pageNumber = 1,
+        int pageSize = 10,
+        string? search = null)
+    {
+        var companyId = GetCompanyId();
+
+        return await reportService.GetProductionLines(companyId, pageNumber, pageSize, search);
+    }
 }
