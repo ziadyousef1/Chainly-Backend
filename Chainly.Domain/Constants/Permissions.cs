@@ -91,4 +91,9 @@ public static class Permissions
         public const string Update = "Cameras.Update";
         public const string Delete = "Cameras.Delete";
     }
+    
+    public static class Simulation
+    {
+        public const string Simulate = "Simulation.Simulate";   
+    }
 }

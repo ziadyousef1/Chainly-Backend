@@ -211,6 +211,18 @@ namespace Chainly.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<double>("MaximumCurrent")
+                        .HasColumnType("float");
+
+                    b.Property<double>("MaximumSpeed")
+                        .HasColumnType("float");
+
+                    b.Property<double>("MaximumTemperature")
+                        .HasColumnType("float");
+
+                    b.Property<double>("RatedPower")
+                        .HasColumnType("float");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CompanyId");

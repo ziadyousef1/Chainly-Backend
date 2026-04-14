@@ -54,13 +54,15 @@ public class AiInsightsService(
         {
             report_id = report.Id.ToString(),
             camera_source = productionLine.Camera.CameraSource,
-            production_line_id = productionLine.Id.ToString()
+            production_line_id = productionLine.Id.ToString(),
+            target_speed = 150,
+            max_temp = productionLine.MaximumTemperature,
+            max_amps = productionLine.MaximumCurrent
         };
-        
-        
+
+
         if (_aiApiSettings.SkipInsightsApiCalls)
         {
-
             return new OkObjectResult(new OpenReportResponseDto
             {
                 Status = "success",
@@ -93,14 +95,14 @@ public class AiInsightsService(
 
         if (report == null)
             return new NotFoundObjectResult("Report not found or already closed.");
-        
+
         var request = new
         {
             report_id = report.Id.ToString()
         };
 
         var url = $"{_aiApiSettings.InsightsBaseUrl}/api/reports/close";
-        
+
         var response = await externalApiService.PostAsync<CloseSessionResponseDto>(url, request);
 
         if (response.Status == "success" && report.EndedAt == null)
