@@ -42,7 +42,11 @@ public class ProductionLineService(AppDbContext context) : IProductionLineServic
             {
                 Id = l.Id,
                 LineName = l.LineName,
-                Description = l.Description
+                Description = l.Description,
+                MaximumSpeed = l.MaximumSpeed,
+                RatedPower = l.RatedPower,
+                MaximumTemperature = l.MaximumTemperature,
+                MaximumCurrent = l.MaximumCurrent
             })
             .ToListAsync();
 
@@ -71,7 +75,11 @@ public class ProductionLineService(AppDbContext context) : IProductionLineServic
         {
             Id = line.Id,
             LineName = line.LineName,
-            Description = line.Description
+            Description = line.Description,
+            MaximumSpeed = line.MaximumSpeed,
+            RatedPower = line.RatedPower,
+            MaximumTemperature = line.MaximumTemperature,
+            MaximumCurrent = line.MaximumCurrent
         };
 
         return new OkObjectResult(dto);
