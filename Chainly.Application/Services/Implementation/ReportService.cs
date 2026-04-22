@@ -18,7 +18,7 @@ public class ReportService(
     IHubContext<Chainly.Infrastructure.Hubs.ReportHub> hubContext) : IReportService
 {
     private readonly AiApiSettings _aiApiSettings = aiApiSettings.Value;
-    
+
     public async Task<IActionResult> GetAllReportsAsync(int companyId, int pageNumber = 1, int pageSize = 10,
         DateTime? startDate = null, DateTime? endDate = null, int? productionLineId = null, string? search = null)
     {
@@ -193,11 +193,23 @@ public class ReportService(
             query = query.Where(r => r.StartedAt.Date <= endDate.Value);
 
         var summary = await query
-            .GroupBy(r => new { r.ProductionLineId, r.ProductionLine.LineName })
+            .GroupBy(r => new
+            {
+                r.ProductionLineId,
+                r.ProductionLine.LineName,
+                r.ProductionLine.MaximumSpeed,
+                r.ProductionLine.RatedPower,
+                r.ProductionLine.MaximumTemperature,
+                r.ProductionLine.MaximumCurrent
+            })
             .Select(g => new
             {
                 g.Key.ProductionLineId,
                 ProductionLineName = g.Key.LineName,
+                g.Key.MaximumSpeed,
+                g.Key.RatedPower,
+                g.Key.MaximumTemperature,
+                g.Key.MaximumCurrent,
                 GoodProducts = g.Sum(x => x.GoodProducts),
                 DefectiveProducts = g.Sum(x => x.DefectiveProducts),
                 TotalProducts = g.Sum(x => x.GoodProducts + x.DefectiveProducts),
@@ -250,7 +262,8 @@ public class ReportService(
         return new OkObjectResult(result);
     }
 
-    public async Task<IActionResult> GetProductionLineReportsAsync(int companyId, int productionLineId, int pageNumber = 1,
+    public async Task<IActionResult> GetProductionLineReportsAsync(int companyId, int productionLineId,
+        int pageNumber = 1,
         int pageSize = 10, DateTime? startDate = null, DateTime? endDate = null)
     {
         if (pageNumber <= 0) pageNumber = 1;
@@ -307,7 +320,8 @@ public class ReportService(
         var report = await context.Reports
             .AsNoTracking()
             .Include(r => r.ProductionLine)
-            .FirstOrDefaultAsync(r => r.Id == reportId && r.ProductionLine.CompanyId == companyId && r.VideoName == null);
+            .FirstOrDefaultAsync(r =>
+                r.Id == reportId && r.ProductionLine.CompanyId == companyId && r.VideoName == null);
 
         if (report == null)
         {
@@ -315,8 +329,10 @@ public class ReportService(
         }
 
         var totalProducts = report.GoodProducts + report.DefectiveProducts;
-        var flawlessPercentage = totalProducts > 0 ? Math.Round(report.GoodProducts / (double)totalProducts * 100, 0) : 0;
-        var defectedPercentage = totalProducts > 0 ? Math.Round(report.DefectiveProducts / (double)totalProducts * 100, 0) : 0;
+        var flawlessPercentage =
+            totalProducts > 0 ? Math.Round(report.GoodProducts / (double)totalProducts * 100, 0) : 0;
+        var defectedPercentage =
+            totalProducts > 0 ? Math.Round(report.DefectiveProducts / (double)totalProducts * 100, 0) : 0;
 
         var result = new
         {
@@ -541,8 +557,8 @@ public class ReportService(
 
         return new OkObjectResult(result);
     }
-    
-        public async Task<IActionResult> GetProductionLines(int companyId, int pageNumber = 1, int pageSize = 10,
+
+    public async Task<IActionResult> GetProductionLines(int companyId, int pageNumber = 1, int pageSize = 10,
         string? search = null)
     {
         if (pageNumber <= 0) pageNumber = 1;
@@ -572,7 +588,7 @@ public class ReportService(
         var url = $"{_aiApiSettings.InsightsBaseUrl}/api/reports";
         var activeReports = await externalApiService.GetAsync<List<ActiveReportDto>>(url)
                             ?? new List<ActiveReportDto>();
-        
+
         var activeReportIds = activeReports
             .Select(r => int.TryParse(r.ReportId, out var id) ? id : (int?)null)
             .Where(id => id.HasValue)
