@@ -3,6 +3,7 @@ using Chainly.Application.Services.Interfaces;
 using Chainly.Data;
 using Firebase.Database;
 using Firebase.Database.Query;
+using Firebase.Database.Streaming;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -23,15 +24,16 @@ public class FirebaseRealtimeService : IFirebaseRealtimeService
 
     private class ReportMonitor
     {
+        public object SyncRoot { get; } = new();
         public int GoodCount { get; set; }
         public int DefectCount { get; set; }
         public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
-        public IDisposable? FirebaseSubscription { get; set; }
+        public IDisposable? DefectSubscription { get; set; }
+        public IDisposable? NonDefectSubscription { get; set; }
     }
 
     private class DetectionEvent
     {
-        public bool Defect { get; set; }
         public string Timestamp { get; set; } = string.Empty;
     }
 
@@ -67,66 +69,90 @@ public class FirebaseRealtimeService : IFirebaseRealtimeService
 
         var monitor = new ReportMonitor();
         
-        var subscription = _firebaseClient
+        var defectSubscription = _firebaseClient
             .Child(reportId.ToString())
+            .Child("defect")
             .AsObservable<DetectionEvent>()
             .Subscribe(async detection =>
             {
-                try
-                {
-                    if (detection?.Object == null)
-                        return;
-
-                    var detectionData = detection.Object;
-                    var isDefect = detectionData.Defect;
-                    var timestamp = detectionData.Timestamp;
-
-                    if (isDefect)
-                        monitor.DefectCount++;
-                    else
-                        monitor.GoodCount++;
-
-                    monitor.LastUpdated = DateTime.UtcNow;
-
-                    using (var scope = _scopeFactory.CreateScope())
-                    {
-                        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                        var reportToUpdate = await context.Reports.FindAsync(reportId);
-                        if (reportToUpdate != null)
-                        {
-                            reportToUpdate.DefectiveProducts = monitor.DefectCount;
-                            reportToUpdate.GoodProducts = monitor.GoodCount;
-                            await context.SaveChangesAsync();
-                        }
-                    }
-                    
-                    await _hubContext.Clients.Group($"ProductionLine_{productionLineId}")
-                        .SendAsync("ProductCountUpdated", new
-                        {
-                            ReportId = reportId,
-                            ProductionLineId = productionLineId,
-                            GoodCount = monitor.GoodCount,
-                            DefectCount = monitor.DefectCount,
-                            TotalCount = monitor.GoodCount + monitor.DefectCount,
-                            IsDefect = isDefect,
-                            Timestamp = timestamp,
-                            LastUpdated = monitor.LastUpdated
-                        });
-                }
-                catch
-                {
-                }
+                await ProcessDetectionAsync(reportId, productionLineId, monitor, detection, true);
             });
 
-        monitor.FirebaseSubscription = subscription;
+        var nonDefectSubscription = _firebaseClient
+            .Child(reportId.ToString())
+            .Child("non_defect")
+            .AsObservable<DetectionEvent>()
+            .Subscribe(async detection =>
+            {
+                await ProcessDetectionAsync(reportId, productionLineId, monitor, detection, false);
+            });
+
+        monitor.DefectSubscription = defectSubscription;
+        monitor.NonDefectSubscription = nonDefectSubscription;
         _activeMonitors.TryAdd(reportId, monitor);
+    }
+
+    private async Task ProcessDetectionAsync(int reportId, int productionLineId, ReportMonitor monitor, FirebaseEvent<DetectionEvent> detection, bool isDefect)
+    {
+        try
+        {
+            if (detection?.Object == null || string.IsNullOrWhiteSpace(detection.Key))
+                return;
+
+            var timestamp = detection.Object.Timestamp;
+            int goodCount;
+            int defectCount;
+            DateTime lastUpdated;
+
+            lock (monitor.SyncRoot)
+            {
+                if (isDefect)
+                    monitor.DefectCount++;
+                else
+                    monitor.GoodCount++;
+
+                monitor.LastUpdated = DateTime.UtcNow;
+                goodCount = monitor.GoodCount;
+                defectCount = monitor.DefectCount;
+                lastUpdated = monitor.LastUpdated;
+            }
+
+            using (var scope = _scopeFactory.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var reportToUpdate = await context.Reports.FindAsync(reportId);
+                if (reportToUpdate != null)
+                {
+                    reportToUpdate.DefectiveProducts = defectCount;
+                    reportToUpdate.GoodProducts = goodCount;
+                    await context.SaveChangesAsync();
+                }
+            }
+
+            await _hubContext.Clients.Group($"ProductionLine_{productionLineId}")
+                .SendAsync("ProductCountUpdated", new
+                {
+                    ReportId = reportId,
+                    ProductionLineId = productionLineId,
+                    GoodCount = goodCount,
+                    DefectCount = defectCount,
+                    TotalCount = goodCount + defectCount,
+                    IsDefect = isDefect,
+                    Timestamp = timestamp,
+                    LastUpdated = lastUpdated
+                });
+        }
+        catch
+        {
+        }
     }
 
     public async Task StopMonitoringReportAsync(int reportId)
     {
         if (_activeMonitors.TryRemove(reportId, out var monitor))
         {
-            monitor.FirebaseSubscription?.Dispose();
+            monitor.DefectSubscription?.Dispose();
+            monitor.NonDefectSubscription?.Dispose();
         }
         
         await Task.CompletedTask;
