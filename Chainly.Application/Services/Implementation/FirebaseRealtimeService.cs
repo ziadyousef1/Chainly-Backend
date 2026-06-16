@@ -24,17 +24,29 @@ public class FirebaseRealtimeService : IFirebaseRealtimeService
 
     private class ReportMonitor
     {
-        public object SyncRoot { get; } = new();
-        public int GoodCount { get; set; }
-        public int DefectCount { get; set; }
-        public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
-        public IDisposable? DefectSubscription { get; set; }
-        public IDisposable? NonDefectSubscription { get; set; }
-    }
-
-    private class DetectionEvent
-    {
-        public string Timestamp { get; set; } = string.Empty;
+        private int _goodCount;
+        private int _defectCount;
+        private long _lastUpdated = DateTime.UtcNow.Ticks;
+        
+        public int GoodCount
+        {
+            get => Volatile.Read(ref _goodCount);
+            set => Volatile.Write(ref _goodCount, value);
+        }
+        
+        public int DefectCount
+        {
+            get => Volatile.Read(ref _defectCount);
+            set => Volatile.Write(ref _defectCount, value);
+        }
+        
+        public DateTime LastUpdated
+        {
+            get => new DateTime(Volatile.Read(ref _lastUpdated));
+            set => Volatile.Write(ref _lastUpdated, value.Ticks);
+        }
+        
+        public IDisposable? Subscription { get; set; }
     }
 
     public FirebaseRealtimeService(
@@ -69,53 +81,44 @@ public class FirebaseRealtimeService : IFirebaseRealtimeService
 
         var monitor = new ReportMonitor();
         
-        var defectSubscription = _firebaseClient
+        var subscription = _firebaseClient
             .Child(reportId.ToString())
-            .Child("defect")
-            .AsObservable<DetectionEvent>()
+            .Child("detections")
+            .AsObservable<Dictionary<string, dynamic>>()
             .Subscribe(async detection =>
             {
-                await ProcessDetectionAsync(reportId, productionLineId, monitor, detection, true);
+                await ProcessDetectionsAsync(reportId, productionLineId, monitor, detection);
             });
 
-        var nonDefectSubscription = _firebaseClient
-            .Child(reportId.ToString())
-            .Child("non_defect")
-            .AsObservable<DetectionEvent>()
-            .Subscribe(async detection =>
-            {
-                await ProcessDetectionAsync(reportId, productionLineId, monitor, detection, false);
-            });
-
-        monitor.DefectSubscription = defectSubscription;
-        monitor.NonDefectSubscription = nonDefectSubscription;
+        monitor.Subscription = subscription;
         _activeMonitors.TryAdd(reportId, monitor);
     }
 
-    private async Task ProcessDetectionAsync(int reportId, int productionLineId, ReportMonitor monitor, FirebaseEvent<DetectionEvent> detection, bool isDefect)
+    private async Task ProcessDetectionsAsync(int reportId, int productionLineId, ReportMonitor monitor, FirebaseEvent<Dictionary<string, dynamic>> detection)
     {
         try
         {
-            if (detection?.Object == null || string.IsNullOrWhiteSpace(detection.Key))
+            if (detection?.Object == null)
                 return;
 
-            var timestamp = detection.Object.Timestamp;
-            int goodCount;
-            int defectCount;
-            DateTime lastUpdated;
+            int goodCount = 0;
+            int defectCount = 0;
 
-            lock (monitor.SyncRoot)
+            foreach (var kvp in detection.Object)
             {
-                if (isDefect)
-                    monitor.DefectCount++;
-                else
-                    monitor.GoodCount++;
-
-                monitor.LastUpdated = DateTime.UtcNow;
-                goodCount = monitor.GoodCount;
-                defectCount = monitor.DefectCount;
-                lastUpdated = monitor.LastUpdated;
+                if (kvp.Value is Dictionary<string, dynamic> itemDict && 
+                    itemDict.TryGetValue("defect", out var defectObj))
+                {
+                    if (Convert.ToBoolean(defectObj))
+                        defectCount++;
+                    else
+                        goodCount++;
+                }
             }
+
+            monitor.DefectCount = defectCount;
+            monitor.GoodCount = goodCount;
+            monitor.LastUpdated = DateTime.UtcNow;
 
             using (var scope = _scopeFactory.CreateScope())
             {
@@ -137,10 +140,24 @@ public class FirebaseRealtimeService : IFirebaseRealtimeService
                     GoodCount = goodCount,
                     DefectCount = defectCount,
                     TotalCount = goodCount + defectCount,
-                    IsDefect = isDefect,
-                    Timestamp = timestamp,
-                    LastUpdated = lastUpdated
+                    LastUpdated = monitor.LastUpdated
                 });
+        }
+        catch
+        {
+        }
+    }
+
+    public async Task UpdateDetectionDefectStatusAsync(int reportId, string detectionId, bool isDefect)
+    {
+        try
+        {
+            await _firebaseClient
+                .Child(reportId.ToString())
+                .Child("detections")
+                .Child(detectionId)
+                .Child("defect")
+                .PutAsync(isDefect);
         }
         catch
         {
@@ -151,8 +168,7 @@ public class FirebaseRealtimeService : IFirebaseRealtimeService
     {
         if (_activeMonitors.TryRemove(reportId, out var monitor))
         {
-            monitor.DefectSubscription?.Dispose();
-            monitor.NonDefectSubscription?.Dispose();
+            monitor.Subscription?.Dispose();
         }
         
         await Task.CompletedTask;

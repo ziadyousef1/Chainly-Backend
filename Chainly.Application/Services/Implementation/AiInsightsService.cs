@@ -105,12 +105,14 @@ public class AiInsightsService(
 
         var response = await externalApiService.PostAsync<CloseSessionResponseDto>(url, request);
 
-        if (response.Status == "success" && report.EndedAt == null)
+        if (response != null && response.Status == "success" && report.EndedAt == null)
         {
             report.EndedAt = DateTime.UtcNow;
             await context.SaveChangesAsync();
         }
 
-        return new OkObjectResult(response);
+        return response != null 
+            ? new OkObjectResult(response)
+            : new BadRequestObjectResult("Failed to close session on AI service");
     }
 }
