@@ -4,13 +4,12 @@ using Chainly.Data;
 using Firebase.Database;
 using Firebase.Database.Query;
 using Firebase.Database.Streaming;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
-using System.Reactive.Linq;
+using System.Text.Json.Serialization;
 
 namespace Chainly.Application.Services.Implementation;
 
@@ -22,30 +21,39 @@ public class FirebaseRealtimeService : IFirebaseRealtimeService
     private readonly FirebaseClient _firebaseClient;
     private static readonly ConcurrentDictionary<int, ReportMonitor> _activeMonitors = new();
 
+    private class DetectionEntry
+    {
+        [JsonPropertyName("defect")]
+        public bool Defect { get; set; }
+
+        [JsonPropertyName("timestamp")]
+        public string Timestamp { get; set; } = "";
+    }
+
     private class ReportMonitor
     {
         private int _goodCount;
         private int _defectCount;
         private long _lastUpdated = DateTime.UtcNow.Ticks;
-        
-        public int GoodCount
-        {
-            get => Volatile.Read(ref _goodCount);
-            set => Volatile.Write(ref _goodCount, value);
-        }
-        
-        public int DefectCount
-        {
-            get => Volatile.Read(ref _defectCount);
-            set => Volatile.Write(ref _defectCount, value);
-        }
-        
+
+        public int GoodCount   => Volatile.Read(ref _goodCount);
+        public int DefectCount => Volatile.Read(ref _defectCount);
+
         public DateTime LastUpdated
         {
             get => new DateTime(Volatile.Read(ref _lastUpdated));
             set => Volatile.Write(ref _lastUpdated, value.Ticks);
         }
-        
+
+        public int IncrementGood()   => Interlocked.Increment(ref _goodCount);
+        public int IncrementDefect() => Interlocked.Increment(ref _defectCount);
+
+        public void Reset()
+        {
+            Interlocked.Exchange(ref _goodCount, 0);
+            Interlocked.Exchange(ref _defectCount, 0);
+        }
+
         public IDisposable? Subscription { get; set; }
     }
 
@@ -80,44 +88,36 @@ public class FirebaseRealtimeService : IFirebaseRealtimeService
         }
 
         var monitor = new ReportMonitor();
-        
+
         var subscription = _firebaseClient
             .Child(reportId.ToString())
             .Child("detections")
-            .AsObservable<Dictionary<string, dynamic>>()
-            .Subscribe(async detection =>
-            {
-                await ProcessDetectionsAsync(reportId, productionLineId, monitor, detection);
-            });
+            .AsObservable<DetectionEntry>()
+            .Subscribe(
+                onNext: async detection =>
+                {
+                    await ProcessSingleDetectionAsync(reportId, productionLineId, monitor, detection);
+                },
+                onError: ex => { },
+                onCompleted: () => { }
+            );
 
         monitor.Subscription = subscription;
         _activeMonitors.TryAdd(reportId, monitor);
     }
 
-    private async Task ProcessDetectionsAsync(int reportId, int productionLineId, ReportMonitor monitor, FirebaseEvent<Dictionary<string, dynamic>> detection)
+    private async Task ProcessSingleDetectionAsync(int reportId, int productionLineId, ReportMonitor monitor, FirebaseEvent<DetectionEntry> detection)
     {
         try
         {
             if (detection?.Object == null)
                 return;
 
-            int goodCount = 0;
-            int defectCount = 0;
+            if (detection.Object.Defect)
+                monitor.IncrementDefect();
+            else
+                monitor.IncrementGood();
 
-            foreach (var kvp in detection.Object)
-            {
-                if (kvp.Value is Dictionary<string, dynamic> itemDict && 
-                    itemDict.TryGetValue("defect", out var defectObj))
-                {
-                    if (Convert.ToBoolean(defectObj))
-                        defectCount++;
-                    else
-                        goodCount++;
-                }
-            }
-
-            monitor.DefectCount = defectCount;
-            monitor.GoodCount = goodCount;
             monitor.LastUpdated = DateTime.UtcNow;
 
             using (var scope = _scopeFactory.CreateScope())
@@ -126,8 +126,8 @@ public class FirebaseRealtimeService : IFirebaseRealtimeService
                 var reportToUpdate = await context.Reports.FindAsync(reportId);
                 if (reportToUpdate != null)
                 {
-                    reportToUpdate.DefectiveProducts = defectCount;
-                    reportToUpdate.GoodProducts = goodCount;
+                    reportToUpdate.DefectiveProducts = monitor.DefectCount;
+                    reportToUpdate.GoodProducts = monitor.GoodCount;
                     await context.SaveChangesAsync();
                 }
             }
@@ -137,9 +137,9 @@ public class FirebaseRealtimeService : IFirebaseRealtimeService
                 {
                     ReportId = reportId,
                     ProductionLineId = productionLineId,
-                    GoodCount = goodCount,
-                    DefectCount = defectCount,
-                    TotalCount = goodCount + defectCount,
+                    GoodCount = monitor.GoodCount,
+                    DefectCount = monitor.DefectCount,
+                    TotalCount = monitor.GoodCount + monitor.DefectCount,
                     LastUpdated = monitor.LastUpdated
                 });
         }
@@ -170,9 +170,7 @@ public class FirebaseRealtimeService : IFirebaseRealtimeService
         {
             monitor.Subscription?.Dispose();
         }
-        
+
         await Task.CompletedTask;
     }
-
-    
 }
