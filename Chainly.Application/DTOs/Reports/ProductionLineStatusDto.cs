@@ -7,4 +7,5 @@ public class ProductionLineStatusDto
     public string ProductionLineDescription { get; set; } = string.Empty;
     public bool Active { get; set; }
     public int? ReportId { get; set; }
+    public bool HasCamera { get; set; }
 }
