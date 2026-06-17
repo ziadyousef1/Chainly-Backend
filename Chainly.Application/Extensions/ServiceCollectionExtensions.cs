@@ -45,7 +45,7 @@ namespace Chainly.Application.Extensions
             services.AddHttpClient();
             services.AddScoped<IExternalApiService, ExternalApiService>();
             services.AddScoped<IAiInsightsService, AiInsightsService>();
-            services.AddScoped<IFirebaseRealtimeService, FirebaseRealtimeService>();
+            services.AddSingleton<IFirebaseRealtimeService, FirebaseRealtimeService>();
             services.AddScoped<ISimulationService, SimulationService>();
             
             return services;
