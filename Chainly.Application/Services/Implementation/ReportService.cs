@@ -581,7 +581,8 @@ public class ReportService(
             {
                 p.Id,
                 p.LineName,
-                p.Description
+                p.Description,
+                HasCamera = p.Camera != null
             })
             .ToListAsync();
 
@@ -609,7 +610,8 @@ public class ReportService(
                 ProductionLineName = line.LineName,
                 ProductionLineDescription = line.Description,
                 Active = report != null,
-                ReportId = report?.Id
+                ReportId = report?.Id,
+                HasCamera = line.HasCamera
             };
         });
 
