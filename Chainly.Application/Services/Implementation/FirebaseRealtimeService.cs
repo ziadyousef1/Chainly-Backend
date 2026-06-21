@@ -3,13 +3,12 @@ using Chainly.Application.Services.Interfaces;
 using Chainly.Data;
 using Firebase.Database;
 using Firebase.Database.Query;
-using Firebase.Database.Streaming;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
-using System.Text.Json.Serialization;
+using System.Reactive.Linq;
 
 namespace Chainly.Application.Services.Implementation;
 
@@ -21,40 +20,31 @@ public class FirebaseRealtimeService : IFirebaseRealtimeService
     private readonly FirebaseClient _firebaseClient;
     private static readonly ConcurrentDictionary<int, ReportMonitor> _activeMonitors = new();
 
-    private class DetectionEntry
-    {
-        [JsonPropertyName("defect")]
-        public bool Defect { get; set; }
-
-        [JsonPropertyName("timestamp")]
-        public string Timestamp { get; set; } = "";
-    }
-
     private class ReportMonitor
     {
-        private int _goodCount;
-        private int _defectCount;
-        private long _lastUpdated = DateTime.UtcNow.Ticks;
+        public int GoodCount { get; set; }
+        public int DefectCount { get; set; }
+        public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+        public IDisposable? FirebaseSubscription { get; set; }
 
-        public int GoodCount   => Volatile.Read(ref _goodCount);
-        public int DefectCount => Volatile.Read(ref _defectCount);
+        public readonly HashSet<string> PreloadedKeys = new(StringComparer.Ordinal);
+        private readonly HashSet<string> _processedKeys = new(StringComparer.Ordinal);
+        private readonly object _lock = new();
 
-        public DateTime LastUpdated
+        public bool TryProcess(string key)
         {
-            get => new DateTime(Volatile.Read(ref _lastUpdated));
-            set => Volatile.Write(ref _lastUpdated, value.Ticks);
+            lock (_lock)
+            {
+                if (PreloadedKeys.Contains(key)) return false;
+                return _processedKeys.Add(key);
+            }
         }
+    }
 
-        public int IncrementGood()   => Interlocked.Increment(ref _goodCount);
-        public int IncrementDefect() => Interlocked.Increment(ref _defectCount);
-
-        public void Reset()
-        {
-            Interlocked.Exchange(ref _goodCount, 0);
-            Interlocked.Exchange(ref _defectCount, 0);
-        }
-
-        public IDisposable? Subscription { get; set; }
+    private class DetectionEvent
+    {
+        public bool Defect { get; set; }
+        public string Timestamp { get; set; } = string.Empty;
     }
 
     public FirebaseRealtimeService(
@@ -74,6 +64,8 @@ public class FirebaseRealtimeService : IFirebaseRealtimeService
             return;
 
         int productionLineId;
+        var monitor = new ReportMonitor();
+
         using (var scope = _scopeFactory.CreateScope())
         {
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -85,91 +77,86 @@ public class FirebaseRealtimeService : IFirebaseRealtimeService
                 return;
 
             productionLineId = report.ProductionLineId;
+            monitor.GoodCount = report.GoodProducts;
+            monitor.DefectCount = report.DefectiveProducts;
         }
 
-        var monitor = new ReportMonitor();
+        try
+        {
+            using var snapshotClient = new FirebaseClient(_firebaseSettings.DatabaseUrl);
+            var snapshotTask = snapshotClient
+                .Child(reportId.ToString())
+                .Child("detections")
+                .OnceAsync<DetectionEvent>();
+
+            if (await Task.WhenAny(snapshotTask, Task.Delay(TimeSpan.FromSeconds(3))) == snapshotTask)
+                foreach (var item in await snapshotTask)
+                    monitor.PreloadedKeys.Add(item.Key);
+        }
+        catch { }
 
         var subscription = _firebaseClient
             .Child(reportId.ToString())
             .Child("detections")
-            .AsObservable<DetectionEntry>()
-            .Subscribe(
-                onNext: async detection =>
-                {
-                    await ProcessSingleDetectionAsync(reportId, productionLineId, monitor, detection);
-                },
-                onError: ex => { },
-                onCompleted: () => { }
-            );
-
-        monitor.Subscription = subscription;
-        _activeMonitors.TryAdd(reportId, monitor);
-    }
-
-    private async Task ProcessSingleDetectionAsync(int reportId, int productionLineId, ReportMonitor monitor, FirebaseEvent<DetectionEntry> detection)
-    {
-        try
-        {
-            if (detection?.Object == null)
-                return;
-
-            if (detection.Object.Defect)
-                monitor.IncrementDefect();
-            else
-                monitor.IncrementGood();
-
-            monitor.LastUpdated = DateTime.UtcNow;
-
-            using (var scope = _scopeFactory.CreateScope())
+            .AsObservable<DetectionEvent>()
+            .Subscribe(async detection =>
             {
-                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                var reportToUpdate = await context.Reports.FindAsync(reportId);
-                if (reportToUpdate != null)
+                try
                 {
-                    reportToUpdate.DefectiveProducts = monitor.DefectCount;
-                    reportToUpdate.GoodProducts = monitor.GoodCount;
-                    await context.SaveChangesAsync();
+                    if (detection?.Object == null)
+                        return;
+
+                    if (!string.IsNullOrEmpty(detection.Key) && !monitor.TryProcess(detection.Key))
+                        return;
+
+                    var isDefect = detection.Object.Defect;
+                    var timestamp = detection.Object.Timestamp;
+
+                    if (isDefect)
+                        monitor.DefectCount++;
+                    else
+                        monitor.GoodCount++;
+
+                    monitor.LastUpdated = DateTime.UtcNow;
+
+                    using (var scope = _scopeFactory.CreateScope())
+                    {
+                        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                        var reportToUpdate = await context.Reports.FindAsync(reportId);
+                        if (reportToUpdate != null)
+                        {
+                            reportToUpdate.GoodProducts = monitor.GoodCount;
+                            reportToUpdate.DefectiveProducts = monitor.DefectCount;
+                            await context.SaveChangesAsync();
+                        }
+                    }
+
+                    await _hubContext.Clients.Group($"ProductionLine_{productionLineId}")
+                        .SendAsync("ProductCountUpdated", new
+                        {
+                            ReportId = reportId,
+                            ProductionLineId = productionLineId,
+                            GoodCount = monitor.GoodCount,
+                            DefectCount = monitor.DefectCount,
+                            TotalCount = monitor.GoodCount + monitor.DefectCount,
+                            IsDefect = isDefect,
+                            Timestamp = timestamp,
+                            LastUpdated = monitor.LastUpdated
+                        });
                 }
-            }
+                catch { }
+            });
 
-            await _hubContext.Clients.Group($"ProductionLine_{productionLineId}")
-                .SendAsync("ProductCountUpdated", new
-                {
-                    ReportId = reportId,
-                    ProductionLineId = productionLineId,
-                    GoodCount = monitor.GoodCount,
-                    DefectCount = monitor.DefectCount,
-                    TotalCount = monitor.GoodCount + monitor.DefectCount,
-                    LastUpdated = monitor.LastUpdated
-                });
-        }
-        catch
-        {
-        }
-    }
+        monitor.FirebaseSubscription = subscription;
 
-    public async Task UpdateDetectionDefectStatusAsync(int reportId, string detectionId, bool isDefect)
-    {
-        try
-        {
-            await _firebaseClient
-                .Child(reportId.ToString())
-                .Child("detections")
-                .Child(detectionId)
-                .Child("defect")
-                .PutAsync(isDefect);
-        }
-        catch
-        {
-        }
+        if (!_activeMonitors.TryAdd(reportId, monitor))
+            subscription.Dispose();
     }
 
     public async Task StopMonitoringReportAsync(int reportId)
     {
         if (_activeMonitors.TryRemove(reportId, out var monitor))
-        {
-            monitor.Subscription?.Dispose();
-        }
+            monitor.FirebaseSubscription?.Dispose();
 
         await Task.CompletedTask;
     }
