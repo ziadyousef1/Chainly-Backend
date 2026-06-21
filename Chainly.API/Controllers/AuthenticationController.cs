@@ -98,6 +98,8 @@ public class AuthenticationController(IAuthService authService) : BaseController
         if (!result)
             return BadRequest("Token is invalid.");
 
+        Response.Cookies.Delete("refreshToken");
+        
         return Ok();
     }
 }
