@@ -1,6 +1,8 @@
 using System.Text;
 using System.Text.Json;
+using Chainly.Application.Configurations;
 using Chainly.Application.Services.Interfaces;
+using Microsoft.Extensions.Options;
 
 namespace Chainly.Application.Services.Implementation
 {
@@ -8,10 +10,12 @@ namespace Chainly.Application.Services.Implementation
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly JsonSerializerOptions _jsonOptions;
+        private readonly AiApiSettings _aiApiSettings;
 
-        public ExternalApiService(IHttpClientFactory httpClientFactory)
+        public ExternalApiService(IHttpClientFactory httpClientFactory, IOptions<AiApiSettings> aiApiSettings)
         {
             _httpClientFactory = httpClientFactory;
+            _aiApiSettings = aiApiSettings.Value;
             _jsonOptions = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
@@ -19,9 +23,25 @@ namespace Chainly.Application.Services.Implementation
             };
         }
 
+        private HttpClient CreateHttpClient(string url)
+        {
+            if (!string.IsNullOrWhiteSpace(_aiApiSettings.InsightsBaseUrl)
+                && url.StartsWith(_aiApiSettings.InsightsBaseUrl, StringComparison.OrdinalIgnoreCase))
+            {
+                var handler = new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                };
+
+                return new HttpClient(handler);
+            }
+
+            return _httpClientFactory.CreateClient();
+        }
+
         public async Task<T?> GetAsync<T>(string url)
         {
-            using var httpClient = _httpClientFactory.CreateClient();
+            using var httpClient = CreateHttpClient(url);
             var response = await httpClient.GetAsync(url);
             
             if (response.IsSuccessStatusCode)
@@ -35,7 +55,7 @@ namespace Chainly.Application.Services.Implementation
 
         public async Task<T?> PostAsync<T>(string url, object? data = null)
         {
-            using var httpClient = _httpClientFactory.CreateClient();
+            using var httpClient = CreateHttpClient(url);
             StringContent? content = null;
             
             if (data != null)
