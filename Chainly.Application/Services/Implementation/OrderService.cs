@@ -146,13 +146,41 @@ public class OrderService(
             })
             .ToListAsync();
 
+        var statusCountsQuery = dbContext.Orders.Where(o => o.CompanyId == companyId);
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            statusCountsQuery = statusCountsQuery.Where(o =>
+                o.CompanyOrderId.ToString().Contains(searchTerm) ||
+                o.Code.Contains(searchTerm));
+        }
+
+        var groupedStatuses = await statusCountsQuery
+            .Select(o => o.Trackings
+                .OrderByDescending(t => t.Timestamp)
+                .Select(t => t.Status)
+                .FirstOrDefault())
+            .GroupBy(s => s)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        int CountOf(OrderStatus s) => groupedStatuses.FirstOrDefault(x => x.Status == s)?.Count ?? 0;
+
         var response = new
         {
             TotalCount = totalCount,
             PageNumber = pageNumber,
             PageSize = pageSize,
             TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
-            Items = orders
+            Items = orders,
+            StatusCounts = new
+            {
+                All = groupedStatuses.Sum(x => x.Count),
+                Pending = CountOf(OrderStatus.Pending),
+                Shipped = CountOf(OrderStatus.Shipped),
+                InTransit = CountOf(OrderStatus.InTransit),
+                Delivered = CountOf(OrderStatus.Delivered),
+                Cancelled = CountOf(OrderStatus.Cancelled),
+            }
         };
 
         return new OkObjectResult(response);
