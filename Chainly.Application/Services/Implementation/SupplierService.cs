@@ -57,10 +57,15 @@ public class SupplierService(
             })
             .ToListAsync();
 
+        var locations = await Geocoding.ResolveManyAsync(
+            externalApiService,
+            suppliers.Select(s => (s.LocationLatitude, s.LocationLongitude)));
+
         var supplierDtos = new List<object>(suppliers.Count);
 
-        foreach (var supplier in suppliers)
+        for (var i = 0; i < suppliers.Count; i++)
         {
+            var supplier = suppliers[i];
             var distance = LocationHelper.CalculateDistance(
                 company.LocationLatitude,
                 company.LocationLongitude,
@@ -72,9 +77,7 @@ public class SupplierService(
                 supplier.Id,
                 supplier.Name,
                 Distance = $"{Math.Round(distance, 2)} Km",
-                Location = await GetLocationAsync(
-                    supplier.LocationLatitude,
-                    supplier.LocationLongitude)
+                Location = locations[i]
             });
         }
 
@@ -118,14 +121,13 @@ public class SupplierService(
         if (pageSize <= 0) pageSize = 10;
 
         var supplier = await context.Suppliers
-            .Include(s => s.SupplierMaterials)
-            .ThenInclude(sm => sm.Material)
+            .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Id == id && (s.CompanyId == companyId || s.CompanyId == null));
 
         if (supplier == null)
             return new NotFoundObjectResult("Supplier not found.");
 
-        var company = await context.Companies.FindAsync(companyId);
+        var company = await context.Companies.AsNoTracking().FirstOrDefaultAsync(c => c.Id == companyId);
         if (company == null)
             return new NotFoundObjectResult("Company not found.");
 
@@ -135,27 +137,30 @@ public class SupplierService(
             supplier.LocationLatitude,
             supplier.LocationLongitude);
 
-        var supplierMaterials = supplier.SupplierMaterials.AsQueryable();
+        var materialsQuery = context.SupplierMaterials
+            .AsNoTracking()
+            .Where(sm => sm.SupplierId == id)
+            .Select(sm => sm.Material);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            string term = search.Trim().ToLower();
-            supplierMaterials = supplierMaterials
-                .Where(sm => sm.Material.Name.ToLower().Contains(term));
+            var term = search.Trim().ToLower();
+            materialsQuery = materialsQuery.Where(m => m.Name.ToLower().Contains(term));
         }
 
-        var totalMaterials = supplierMaterials.Count();
+        var totalMaterials = await materialsQuery.CountAsync();
 
-        var pagedMaterials = supplierMaterials
+        var pagedMaterials = await materialsQuery
+            .OrderBy(m => m.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .Select(sm => new MaterialDto
+            .Select(m => new MaterialDto
             {
-                Id = sm.Material.Id,
-                Name = sm.Material.Name,
-                CarbonFootprint = $"{sm.Material.EmissionValue} CO2e/{sm.Material.Unit}"
+                Id = m.Id,
+                Name = m.Name,
+                CarbonFootprint = $"{m.EmissionValue} CO2e/{m.Unit}"
             })
-            .ToList();
+            .ToListAsync();
 
         var result = new
         {
@@ -168,7 +173,8 @@ public class SupplierService(
                 Latitude = supplier.LocationLatitude,
                 Longitude = supplier.LocationLongitude,
                 Distance = $"{Math.Round(numericDistance, 2)} Km",
-                Location = GetLocationAsync(supplier.LocationLatitude, supplier.LocationLongitude).Result
+                Location = await Geocoding.ResolveAsync(
+                    externalApiService, supplier.LocationLatitude, supplier.LocationLongitude)
             },
             Materials = new
             {
@@ -305,12 +311,4 @@ public class SupplierService(
         return new OkObjectResult(new { importedCount, totalRecords = suppliers.Count() });
     }
 
-    private async Task<string> GetLocationAsync(decimal latitude, decimal longitude)
-    {
-        var url =
-            $"https://api.geoapify.com/v1/geocode/reverse?lat={latitude}&lon={longitude}&apiKey=0e99ae334bed4b85b7f75ff56a8d1226";
-        var geoResponse = await externalApiService.GetAsync<GeoapifyResponse>(url);
-
-        return geoResponse?.Features?.FirstOrDefault()?.Properties?.Formatted ?? "Location not available";
-    }
 }

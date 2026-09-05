@@ -303,21 +303,23 @@ public class AuthService(
         if (!isCustomer)
         {
             claims.Add(new Claim("companyId", user.CompanyId.ToString()));
+            claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-            foreach (var role in roles)
+            var roleIds = await roleManager.Roles
+                .Where(r => r.CompanyId == user.CompanyId && roles.Contains(r.Name))
+                .Select(r => r.Id)
+                .ToListAsync();
+
+            if (roleIds.Count > 0)
             {
-                claims.Add(new Claim(ClaimTypes.Role, role));
+                var permissions = await context.RoleClaims
+                    .Where(rc => roleIds.Contains(rc.RoleId) && rc.ClaimType == CustomClaimTypes.Permission)
+                    .Select(rc => rc.ClaimValue)
+                    .Where(v => v != null)
+                    .Distinct()
+                    .ToListAsync();
 
-                var roleEntity = await roleManager.Roles
-                    .FirstOrDefaultAsync(r => r.Name == role && r.CompanyId == user.CompanyId);
-
-                if (roleEntity != null)
-                {
-                    var roleClaims = await roleManager.GetClaimsAsync(roleEntity);
-                    claims.AddRange(roleClaims
-                        .Where(c => c.Type == CustomClaimTypes.Permission)
-                        .Select(c => new Claim(CustomClaimTypes.Permission, c.Value)));
-                }
+                claims.AddRange(permissions.Select(p => new Claim(CustomClaimTypes.Permission, p!)));
             }
         }
 

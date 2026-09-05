@@ -47,11 +47,19 @@ public class UserService(UserManager<User> userManager, AppDbContext context, IH
                     .Any(ur => ur.UserId == u.Id && ur.RoleId == roleId.Value));
         }
 
-        var activeUsersCount = await context.Users
-            .CountAsync(u => u.CompanyId == companyId && u.IsActive);
+        var statusCounts = await context.Users
+            .AsNoTracking()
+            .Where(u => u.CompanyId == companyId)
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Active = g.Count(u => u.IsActive),
+                Inactive = g.Count(u => !u.IsActive)
+            })
+            .FirstOrDefaultAsync();
 
-        var inactiveUsersCount = await context.Users
-            .CountAsync(u => u.CompanyId == companyId && !u.IsActive);
+        var activeUsersCount = statusCounts?.Active ?? 0;
+        var inactiveUsersCount = statusCounts?.Inactive ?? 0;
 
         var totalCount = await usersQuery.CountAsync();
 

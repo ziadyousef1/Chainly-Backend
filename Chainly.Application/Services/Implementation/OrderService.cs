@@ -132,7 +132,6 @@ public class OrderService(
 
         var orders = await query
             .OrderBy(o => o.CompanyOrderId)
-            .Include(o => o.Trackings)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .Select(o => new
@@ -166,7 +165,9 @@ public class OrderService(
         if (pageNumber <= 0) pageNumber = 1;
         if (pageSize <= 0) pageSize = 10;
 
-        var customer = dbContext.Users.FirstOrDefault(u => u.Id == customerId);
+        var customer = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == customerId);
+        if (customer == null)
+            return new NotFoundObjectResult("Customer not found.");
 
         var query = dbContext.Orders
             .Where(o => o.Phone == customer.PhoneNumber || o.Email == customer.Email);
@@ -187,7 +188,6 @@ public class OrderService(
 
         var orders = await query
             .OrderBy(o => o.CompanyOrderId)
-            .Include(o => o.Trackings)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .Select(o => new
@@ -217,8 +217,7 @@ public class OrderService(
     public async Task<IActionResult> GetOrderTrackingByIdAsync(int orderId, int companyId)
     {
         var order = await dbContext.Orders
-            .Include(o => o.Trackings)
-            .ThenInclude(t => t.UpdatedByNavigation)
+            .AsNoTracking()
             .Where(o => o.CompanyOrderId == orderId && o.CompanyId == companyId)
             .Select(o => new OrderDto
             {
@@ -252,28 +251,24 @@ public class OrderService(
             return new NotFoundObjectResult("Order not found.");
         }
 
-        foreach (var tracking in order.Trackings)
-        {
-            if (tracking.Latitude != 0 && tracking.Longitude != 0)
-            {
-                tracking.Location = await GetLocationAsync(tracking.Latitude, tracking.Longitude);
-            }
-            else
-            {
-                tracking.Location = "Location not available";
-            }
-        }
+        var locations = await Geocoding.ResolveManyAsync(
+            externalApiService,
+            order.Trackings.Select(t => (t.Latitude, t.Longitude)));
 
+        for (var i = 0; i < order.Trackings.Count; i++)
+            order.Trackings[i].Location = locations[i];
 
         return new OkObjectResult(order);
     }
 
     public async Task<IActionResult> GetCustomerOrderTrackingByIdAsync(int orderId, int customerId)
     {
-        var customer = dbContext.Users.FirstOrDefault(u => u.Id == customerId);
+        var customer = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == customerId);
+        if (customer == null)
+            return new NotFoundObjectResult("Customer not found.");
 
         var order = await dbContext.Orders
-            .Include(o => o.Trackings)
+            .AsNoTracking()
             .Where(o => (o.Phone == customer.PhoneNumber || o.Email == customer.Email) && o.Id == orderId)
             .Select(o => new CustomerOrderDto()
             {
@@ -297,18 +292,12 @@ public class OrderService(
             return new NotFoundObjectResult("Order not found.");
         }
 
-        foreach (var tracking in order.Trackings)
-        {
-            if (tracking.Latitude != 0 && tracking.Longitude != 0)
-            {
-                tracking.Location = await GetLocationAsync(tracking.Latitude, tracking.Longitude);
-            }
-            else
-            {
-                tracking.Location = "Location not available";
-            }
-        }
+        var customerLocations = await Geocoding.ResolveManyAsync(
+            externalApiService,
+            order.Trackings.Select(t => (t.Latitude, t.Longitude)));
 
+        for (var i = 0; i < order.Trackings.Count; i++)
+            order.Trackings[i].Location = customerLocations[i];
 
         return new OkObjectResult(order);
     }
@@ -341,16 +330,6 @@ public class OrderService(
 
         await dbContext.SaveChangesAsync();
         return new ServiceResponse("Order tracking updated successfully.", true);
-    }
-
-
-    private async Task<string> GetLocationAsync(decimal latitude, decimal longitude)
-    {
-        var url =
-            $"https://api.geoapify.com/v1/geocode/reverse?lat={latitude}&lon={longitude}&apiKey=0e99ae334bed4b85b7f75ff56a8d1226";
-        var geoResponse = await externalApiService.GetAsync<GeoapifyResponse>(url);
-
-        return geoResponse?.Features?.FirstOrDefault()?.Properties?.Formatted ?? "Location not available";
     }
 
     public async Task<IActionResult> CreateOrderAsync(OrderTrackingDto orderTrackingDto, int companyId, int UpdatedBy)
@@ -396,70 +375,75 @@ public class OrderService(
         var currentMonthStart = new DateTime(now.Year, now.Month, 1);
         var lastMonthStart = currentMonthStart.AddMonths(-1);
 
-        var trackings = await dbContext.OrderTracking
-            .Where(t => t.CompanyId == companyId && t.Timestamp >= lastMonthStart)
-            .Select(t => new { t.OrderId, t.Status, t.Timestamp })
-            .ToListAsync();
-
-        var current = trackings.Where(t => t.Timestamp >= currentMonthStart).ToList();
-        var last = trackings.Where(t => t.Timestamp < currentMonthStart && t.Timestamp > lastMonthStart).ToList();
-
-        int CountByLastStatus(IEnumerable<dynamic> list, OrderStatus status)
-        {
-            return list
-                .GroupBy(t => (int)t.OrderId)
-                .Select(g => g.OrderByDescending(t => (DateTime)t.Timestamp).First())
-                .Count(t => (OrderStatus)t.Status == status);
-        }
-
-        int CountTotal(IEnumerable<dynamic> list)
-        {
-            return list.Select(t => (int)t.OrderId).Distinct().Count();
-        }
+        var overall = await GetTrackingWindowStatsAsync(companyId, lastMonthStart, now.AddMinutes(1), fromInclusive: true);
+        var last = await GetTrackingWindowStatsAsync(companyId, lastMonthStart, currentMonthStart, fromInclusive: false);
+        var current = await GetTrackingWindowStatsAsync(companyId, currentMonthStart, now.AddMinutes(1), fromInclusive: true);
 
         var summary = new
         {
-            DeliveredOrders = CountByLastStatus(trackings, OrderStatus.Delivered),
-            DeliveredOrdersChange = CalculateChange(
-                CountByLastStatus(last, OrderStatus.Delivered),
-                CountByLastStatus(current, OrderStatus.Delivered)),
-            
-            PendingOrders = CountByLastStatus(trackings, OrderStatus.Pending),
-            PendingOrdersChange = CalculateChange(
-                CountByLastStatus(last, OrderStatus.Pending),
-                CountByLastStatus(current, OrderStatus.Pending)),
+            DeliveredOrders = overall.Delivered,
+            DeliveredOrdersChange = CalculateChange(last.Delivered, current.Delivered),
 
-            CancelledOrders = CountByLastStatus(trackings, OrderStatus.Cancelled),
-            CancelledOrdersChange = CalculateChange(
-                CountByLastStatus(last, OrderStatus.Cancelled),
-                CountByLastStatus(current, OrderStatus.Cancelled)),
+            PendingOrders = overall.Pending,
+            PendingOrdersChange = CalculateChange(last.Pending, current.Pending),
 
-            TotalPlacedOrders = CountTotal(trackings),
-            TotalPlacedOrdersChange = CalculateChange(CountTotal(last), CountTotal(current))
+            CancelledOrders = overall.Cancelled,
+            CancelledOrdersChange = CalculateChange(last.Cancelled, current.Cancelled),
+
+            TotalPlacedOrders = overall.Total,
+            TotalPlacedOrdersChange = CalculateChange(last.Total, current.Total)
         };
 
         return new OkObjectResult(summary);
     }
+
+    private async Task<TrackingWindowStats> GetTrackingWindowStatsAsync(
+        int companyId, DateTime from, DateTime to, bool fromInclusive)
+    {
+        var window = dbContext.OrderTracking
+            .AsNoTracking()
+            .Where(t => t.CompanyId == companyId && t.Timestamp < to);
+
+        window = fromInclusive
+            ? window.Where(t => t.Timestamp >= from)
+            : window.Where(t => t.Timestamp > from);
+
+        var counts = await window
+            .GroupBy(t => t.OrderId)
+            .Select(g => g.OrderByDescending(t => t.Timestamp).Select(t => t.Status).First())
+            .GroupBy(status => status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        int CountOf(OrderStatus status) =>
+            counts.FirstOrDefault(x => x.Status == status)?.Count ?? 0;
+
+        return new TrackingWindowStats(
+            CountOf(OrderStatus.Pending),
+            CountOf(OrderStatus.Delivered),
+            CountOf(OrderStatus.Cancelled),
+            counts.Sum(x => x.Count));
+    }
+
+    private sealed record TrackingWindowStats(int Pending, int Delivered, int Cancelled, int Total);
 
 
     public async Task<IActionResult> GetOrdersMonthlyStatsAsync(int companyId, int? year = null)
     {
         var targetYear = year ?? DateTime.UtcNow.Year;
 
-        var orders = await dbContext.Orders
-            .Where(o => o.CompanyId == companyId)
-            .Select(o => new
-            {
-                OrderId = o.Id,
-                CreatedAt = o.Trackings
-                    .OrderBy(t => t.Timestamp)
-                    .Select(t => t.Timestamp)
-                    .FirstOrDefault()
-            })
-            .Where(o => o.CreatedAt != default)
+        var createdAtQuery = dbContext.Orders
+            .AsNoTracking()
+            .Where(o => o.CompanyId == companyId && o.Trackings.Any())
+            .Select(o => o.Trackings.Min(t => t.Timestamp));
+
+        var availableYears = await createdAtQuery
+            .Select(d => d.Year)
+            .Distinct()
+            .OrderBy(y => y)
             .ToListAsync();
 
-        if (orders.Count == 0)
+        if (availableYears.Count == 0)
         {
             return new OkObjectResult(new
             {
@@ -469,17 +453,11 @@ public class OrderService(
             });
         }
 
-        var availableYears = orders
-            .GroupBy(o => o.CreatedAt.Year)
-            .Select(g => g.Key)
-            .OrderBy(y => y)
-            .ToList();
-
-        var monthlyCounts = orders
-            .Where(o => o.CreatedAt.Year == targetYear)
-            .GroupBy(o => o.CreatedAt.Month)
+        var monthlyCounts = await createdAtQuery
+            .Where(d => d.Year == targetYear)
+            .GroupBy(d => d.Month)
             .Select(g => new { Month = g.Key, Count = g.Count() })
-            .ToList();
+            .ToListAsync();
 
         var monthlyArray = Enumerable.Range(1, 12)
             .Select(m => monthlyCounts.FirstOrDefault(x => x.Month == m)?.Count ?? 0)

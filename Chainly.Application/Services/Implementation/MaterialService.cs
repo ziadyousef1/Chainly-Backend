@@ -74,44 +74,51 @@ public class MaterialService(AppDbContext context) : IMaterialService
         if (pageSize <= 0) pageSize = 10;
 
         var material = await context.Materials
-            .Include(m => m.SupplierMaterials)
-            .ThenInclude(sm => sm.Supplier)
+            .AsNoTracking()
             .FirstOrDefaultAsync(m => m.Id == id);
 
         if (material is null)
             return new NotFoundObjectResult(new { message = "Material not found" });
 
-        var company = await context.Companies.FirstOrDefaultAsync(c => c.Id == companyId);
+        var company = await context.Companies.AsNoTracking().FirstOrDefaultAsync(c => c.Id == companyId);
         if (company is null)
             return new BadRequestObjectResult(new { message = "Company not found" });
 
-        var suppliersList = material.SupplierMaterials
-            .Where(sm => sm.Supplier.CompanyId == companyId || sm.Supplier.CompanyId == null)
-            .Select(sm =>
+        var supplierQuery = context.SupplierMaterials
+            .AsNoTracking()
+            .Where(sm => sm.MaterialId == id &&
+                         (sm.Supplier.CompanyId == companyId || sm.Supplier.CompanyId == null))
+            .Select(sm => new
             {
-                var supplier = sm.Supplier;
+                sm.Supplier.Id,
+                sm.Supplier.Name,
+                sm.Supplier.LocationLatitude,
+                sm.Supplier.LocationLongitude
+            });
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLower();
+            supplierQuery = supplierQuery.Where(s => s.Name.ToLower().Contains(term));
+        }
+
+        var supplierRows = await supplierQuery.ToListAsync();
+
+        var suppliersList = supplierRows
+            .Select(supplier =>
+            {
                 var distance = LocationHelper.CalculateDistance(
                     company.LocationLatitude, company.LocationLongitude,
                     supplier.LocationLatitude, supplier.LocationLongitude);
-
-                var footprintValue = distance * material.EmissionValue;
 
                 return new
                 {
                     supplier.Id,
                     supplier.Name,
-                    FootprintValue = Math.Round(footprintValue, 2)
+                    FootprintValue = Math.Round(distance * material.EmissionValue, 2)
                 };
             })
             .ToList();
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            string term = search.Trim().ToLower();
-            suppliersList = suppliersList
-                .Where(s => s.Name.ToLower().Contains(term))
-                .ToList();
-        }
 
         if (!string.IsNullOrWhiteSpace(sortOrder))
         {

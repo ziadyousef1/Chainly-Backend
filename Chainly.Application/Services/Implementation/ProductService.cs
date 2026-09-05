@@ -30,14 +30,21 @@ public class ProductService(AppDbContext context) : IProductService
             query = query.Where(p => p.Name.Contains(search));
         }
 
-        var productsQuery = query
-            .Select(p => new ProductDto
+        var salesByProduct = context.SalesData
+            .Where(s => s.CompanyId == companyId)
+            .GroupBy(s => s.ProductId)
+            .Select(g => new { ProductId = g.Key, Sold = g.Count() });
+
+        var productsQuery =
+            from p in query
+            join s in salesByProduct on p.Id equals s.ProductId into gj
+            from s in gj.DefaultIfEmpty()
+            select new ProductDto
             {
                 Id = p.Id,
                 Name = p.Name,
-                Stock = Math.Abs(
-                    p.Stock - context.SalesData.Count(s => s.ProductId == p.Id && s.CompanyId == companyId))
-            });
+                Stock = Math.Abs(p.Stock - (s == null ? 0 : s.Sold))
+            };
 
         if (minStock.HasValue)
         {
