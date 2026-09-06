@@ -118,7 +118,11 @@ public class OrderService(
 
         if (status.HasValue)
         {
-            query = query.Where(o => o.Trackings.Any(t => t.Status == status.Value));
+            query = query.Where(o =>
+                o.Trackings
+                    .OrderByDescending(t => t.Timestamp)
+                    .Select(t => t.Status)
+                    .FirstOrDefault() == status.Value);
         }
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -131,7 +135,7 @@ public class OrderService(
         var totalCount = await query.CountAsync();
 
         var orders = await query
-            .OrderBy(o => o.CompanyOrderId)
+            .OrderByDescending(o => o.CompanyOrderId)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .Select(o => new
@@ -202,7 +206,11 @@ public class OrderService(
 
         if (status.HasValue)
         {
-            query = query.Where(o => o.Trackings.Any(t => t.Status == status.Value));
+            query = query.Where(o =>
+                o.Trackings
+                    .OrderByDescending(t => t.Timestamp)
+                    .Select(t => t.Status)
+                    .FirstOrDefault() == status.Value);
         }
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -215,7 +223,7 @@ public class OrderService(
         var totalCount = await query.CountAsync();
 
         var orders = await query
-            .OrderBy(o => o.CompanyOrderId)
+            .OrderByDescending(o => o.CompanyOrderId)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .Select(o => new
