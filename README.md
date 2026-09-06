@@ -1,6 +1,5 @@
-﻿<div>
-  <img src="./assets/DevIgnite.png" width="150" align="left" />
-  <img src="./assets/Victories4.png" width="150" align="right" />
+﻿<div align="center">
+  <img src="./assets/Chainly.png" width="200"/>
 </div>
 <br>
 <h1 align="center">Chainly - Backend</h1>
@@ -123,7 +122,7 @@ API endpoints are documented using Scalar/OpenAPI:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/ieee-victoris-4-0/Chainly.Backend.git
+   git clone https://github.com/Chainly-IEEE-V5/Chainly-Backend.git
    ```
 
 2. Install dependencies:
@@ -165,8 +164,6 @@ To run unit tests for Chainly:
    dotnet test
    ```
 
-<div>
-  <img src="./assets/DevIgnite.png" width="150" align="left" />
-  <img src="./assets/Victories4.png" width="150" align="right" />
-</div>
+<div align="center">
+  <img src="./assets/victoris logo-.png" width="400"/>
 </div>
