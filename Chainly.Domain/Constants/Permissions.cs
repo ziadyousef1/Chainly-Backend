@@ -21,6 +21,7 @@ public static class Permissions
         public const string View = "Users.View";
         public const string Create = "Users.Create";
         public const string Update = "Users.Update";
+        public const string ResetPassword = "Users.ResetPassword";
         public const string Delete = "Users.Delete";
         public const string Activate = "Users.Activate";
     }

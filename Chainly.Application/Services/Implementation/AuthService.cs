@@ -210,6 +210,9 @@ public class AuthService(
         if (user == null)
             return new NotFoundObjectResult("User Not Found !");
 
+        if (IsPasswordChangeLocked(user))
+            return new ObjectResult("Password reset is disabled for the demo account.") { StatusCode = 403 };
+
         var code = new Random().Next(100000, 999999).ToString();
         user.VerificationCode = code;
         user.ExpirationCode = DateTime.UtcNow.AddMinutes(10);
@@ -227,12 +230,22 @@ public class AuthService(
         return new OkObjectResult("OTP Sent Successfully :)");
     }
 
-    public async Task<IActionResult> ResetPasswordAsync(string email, string currentPassword, string newPassword,
-        string newPasswordConfirm)
+    public async Task<IActionResult> ResetPasswordAsync(int currentUserId, string email, string currentPassword,
+        string newPassword, string newPasswordConfirm)
     {
-        var user = await userManager.FindByEmailAsync(email);
+        var user = await userManager.FindByIdAsync(currentUserId.ToString());
         if (user == null)
             return new NotFoundObjectResult("User Not Found!");
+
+        if (!string.Equals(user.Email, email, StringComparison.OrdinalIgnoreCase))
+            return new ObjectResult("You can only reset your own password.") { StatusCode = 403 };
+
+        if (IsPasswordChangeLocked(user))
+            return new ObjectResult("Password reset is disabled for the demo account.") { StatusCode = 403 };
+
+        var roles = await userManager.GetRolesAsync(user);
+        if (roles.Count > 0 && !await UserHasPermissionAsync(user, roles, Permissions.Users.ResetPassword))
+            return new ObjectResult("You do not have permission to reset password.") { StatusCode = 403 };
 
         if (newPassword != newPasswordConfirm)
         {
@@ -245,6 +258,25 @@ public class AuthService(
             return new BadRequestObjectResult(result.Errors);
 
         return new OkObjectResult("Password reset successfully!");
+    }
+
+    private static bool IsPasswordChangeLocked(User user) =>
+        !string.IsNullOrEmpty(user.Email) && DemoAccounts.Emails.Contains(user.Email);
+
+    private async Task<bool> UserHasPermissionAsync(User user, IList<string> roles, string permission)
+    {
+        var roleIds = await roleManager.Roles
+            .Where(r => r.CompanyId == user.CompanyId && roles.Contains(r.Name))
+            .Select(r => r.Id)
+            .ToListAsync();
+
+        if (roleIds.Count == 0)
+            return false;
+
+        return await context.RoleClaims.AnyAsync(rc =>
+            roleIds.Contains(rc.RoleId)
+            && rc.ClaimType == CustomClaimTypes.Permission
+            && rc.ClaimValue == permission);
     }
 
     public async Task<IActionResult> VerifyEmailAsync(string email, string code)

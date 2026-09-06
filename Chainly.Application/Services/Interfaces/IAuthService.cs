@@ -11,7 +11,7 @@ public interface IAuthService
     Task<IActionResult> LoginAsync(LoginDto model, bool isCustomer);
     Task<IActionResult> ForgotPasswordAsync(string email);
 
-    Task<IActionResult> ResetPasswordAsync(string email, string currentPassword, string newPassword,
+    Task<IActionResult> ResetPasswordAsync(int currentUserId, string email, string currentPassword, string newPassword,
         string newPasswordConfirm);
 
     Task<IActionResult> VerifyEmailAsync(string email, string code);
