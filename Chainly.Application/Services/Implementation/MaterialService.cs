@@ -29,15 +29,14 @@ public class MaterialService(AppDbContext context) : IMaterialService
 
         var totalCount = await query.CountAsync();
 
-        if (!string.IsNullOrWhiteSpace(sortOrder))
+        query = sortOrder?.ToLower() switch
         {
-            query = sortOrder.ToLower() switch
-            {
-                "desc" => query.OrderByDescending(m => m.EmissionValue),
-                "asc" => query.OrderBy(m => m.EmissionValue),
-                _ => query.OrderBy(m => m.Name)
-            };
-        }
+            "desc" => query.OrderByDescending(m => m.EmissionValue).ThenBy(m => m.Name),
+            "asc" => query.OrderBy(m => m.EmissionValue).ThenBy(m => m.Name),
+            _ => query
+                .OrderByDescending(m => m.SupplierMaterials.Count())
+                .ThenBy(m => m.Name)
+        };
 
         var materials = await query
             .Skip((pageNumber - 1) * pageSize)

@@ -45,6 +45,13 @@ public class SupplierService(
 
         var totalCount = await query.CountAsync();
 
+        if (string.IsNullOrWhiteSpace(sortType))
+        {
+            query = query
+                .OrderByDescending(s => s.SupplierMaterials.Count())
+                .ThenBy(s => s.Name);
+        }
+
         var suppliers = await query
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
