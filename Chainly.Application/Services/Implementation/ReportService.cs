@@ -586,9 +586,7 @@ public class ReportService(
             })
             .ToListAsync();
 
-        var url = $"{_aiApiSettings.InsightsBaseUrl}/api/reports";
-        var activeReports = await externalApiService.GetAsync<List<ActiveReportDto>>(url)
-                            ?? new List<ActiveReportDto>();
+        var activeReports = await GetActiveInsightReportsAsync();
 
         var activeReportIds = activeReports
             .Select(r => int.TryParse(r.ReportId, out var id) ? id : (int?)null)
@@ -623,5 +621,25 @@ public class ReportService(
             TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
             Items = items
         });
+    }
+
+    private async Task<List<ActiveReportDto>> GetActiveInsightReportsAsync()
+    {
+        if (_aiApiSettings.SkipInsightsApiCalls || string.IsNullOrWhiteSpace(_aiApiSettings.InsightsBaseUrl))
+            return [];
+
+        var url = $"{_aiApiSettings.InsightsBaseUrl.TrimEnd('/')}/api/reports";
+        try
+        {
+            return await externalApiService.GetAsync<List<ActiveReportDto>>(url) ?? [];
+        }
+        catch (HttpRequestException)
+        {
+            return [];
+        }
+        catch (TaskCanceledException)
+        {
+            return [];
+        }
     }
 }
